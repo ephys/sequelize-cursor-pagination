@@ -1,0 +1,22 @@
+{
+  "name": "@ephys/sequelize-cursor-pagination",
+  "version": "1.0.0",
+  "description": "Implement Cursor Pagination in the Sequelize ORM",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ephys/sequelize-cursor-pagination.git"
+  },
+  "author": "Guylian Cox <hello@guylian.me>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Ephys/sequelize-cursor-pagination/issues"
+  },
+  "homepage": "https://github.com/Ephys/sequelize-cursor-pagination#readme",
+  "peerDependencies": {
+    "sequelize": "^6.6.2"
+  }
+}
