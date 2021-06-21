@@ -10,7 +10,7 @@ This library has been designed with the [GraphQL Cursor Connections Specificatio
 
 ## Install
 
-`npm i @ephys/sequelize-cursor-pagination`
+[`npm i @ephys/sequelize-cursor-pagination`](https://www.npmjs.com/package/@ephys/sequelize-cursor-pagination)
 
 TypeScript typings are built-in.
 
