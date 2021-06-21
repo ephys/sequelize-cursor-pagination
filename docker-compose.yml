@@ -1,0 +1,13 @@
+version: '2'
+services:
+  mmc-psql:
+    image: postgres:12.2
+    container_name: sequelize-cursor-psql
+    ports:
+      - "19132:5432"
+    environment:
+      # dev database, don't use these in prod!
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: user
+      POSTGRES_DB: db
+    mem_limit: 256M

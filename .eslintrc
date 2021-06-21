@@ -1,0 +1,6 @@
+{
+  "extends":[
+    "@foobarhq/eslint-config",
+    "@foobarhq/eslint-config-typescript"
+  ]
+}

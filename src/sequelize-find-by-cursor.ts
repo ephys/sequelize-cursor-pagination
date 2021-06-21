@@ -7,6 +7,8 @@ import {
   OrderItem as SequelizeOrderItem,
   Logging,
   Transactionable,
+  Projectable,
+  Filterable,
 } from 'sequelize';
 import { getPrimaryColumns, matchAssociationReference } from './sequelize-utils';
 import { MaybePromise } from './types';
@@ -26,6 +28,8 @@ export type OrderTuple = [string, 'ASC' | 'DESC'];
 
 type Cursor = { [key: string]: any }
 
+interface IDownPassed extends Logging, Transactionable, Projectable, Filterable<any> {}
+
 interface QueryMetadata<Entity extends Model> {
   isLast: boolean,
   limit: number,
@@ -39,12 +43,6 @@ interface QueryMetadata<Entity extends Model> {
 
   passDown: IDownPassed,
 }
-
-// TODO: this library could generate a stateless cursor
-// TODO: add support for extra properties:
-//  - where: join it to our cursor where using Sequelize.and(config.where, orderQuery)
-
-interface IDownPassed extends Logging, Transactionable {}
 
 export interface FindByCursorConfig<E extends Model> extends IDownPassed {
   model: ModelClass<E>,
@@ -66,6 +64,10 @@ export interface FindByCursorConfig<E extends Model> extends IDownPassed {
   first?: number | null,
   last?: number | null,
 
+  /**
+   * Use this to customise the query for your own needs if the provided options are not sufficient.
+   * This option should be used as a last resort.
+   */
   findAll?: ModelFinder<E>,
 }
 
@@ -85,23 +87,18 @@ export async function sequelizeFindByCursor<Entity extends Model>(
     ...passDown
   } = config;
 
-  if (!order || order.length === 0) {
-    throw new Error(`'order' must be specified`);
+  if (!Array.isArray(order) || order.length === 0) {
+    throw new Error(`'order' must be specified (and an Array)`);
   }
 
   if (after && before) {
     // TODO
-    throw new Error(`Having both 'before' and 'after' is not currently supported.`);
+    throw new Error(`Having both 'before' and 'after' is not currently supported. PR welcome.`);
   }
 
   if (first != null && last != null) {
-    throw new Error(`Having both 'first' and 'last' is not currently supported.`);
+    throw new Error(`Having both 'first' and 'last' is not supported.`);
   }
-
-  const primaryKeys: string[] = getPrimaryColumns(model)
-  // sort by db name to ensure they are in the same order between restarts
-    .sort((c1, c2) => c1.field.localeCompare(c2.field))
-    .map(col => col.fieldName);
 
   const limit = first || last;
   if (!Number.isSafeInteger(limit)) {
@@ -112,9 +109,20 @@ export async function sequelizeFindByCursor<Entity extends Model>(
     throw new Error(`'first' and 'last' cannot be < 0`);
   }
 
-  // sort by PK last to ensure the [where PK] (see below) works on a consistent dataset.
-  const pkOrderBy: OrderTuple[] = primaryKeys.map(pk => [pk, 'ASC']);
-  const sortOrder: OrderTuple[] = [...order, ...pkOrderBy];
+  const primaryKeys: string[] = getPrimaryColumns(model)
+    // sort by db name to ensure they are in the same order between restarts
+    .sort((c1, c2) => c1.field.localeCompare(c2.field))
+    .map(col => col.fieldName);
+
+  // sort by PK last to ensure the [where PK] (see #getPage) always returns the elements in the same order.
+  const sortOrder: OrderTuple[] = [...order];
+  for (const primaryKey of primaryKeys) {
+    if (sortOrder.find(tuple => tuple[0] === primaryKey) != null) {
+      continue;
+    }
+
+    sortOrder.push([primaryKey, 'ASC']);
+  }
 
   const queryMetadata: QueryMetadata<Entity> = {
     isLast: last != null,
@@ -237,6 +245,7 @@ async function getPage<Entity extends Model>(
 
     // subqueries are not compatible with referencing a joined table in `order`
     // TODO: This should be fixed in Sequelize, need a bug report
+    // @ts-expect-error
     subQuery: queryOrder.find(item => item.length === 3) == null,
   };
 
@@ -260,7 +269,7 @@ async function getPage<Entity extends Model>(
    *    OR (lastName = after.lastName AND pk > after.pk)))
    */
 
-  const wheres = [];
+  const wheres = query.where ? [query.where] : [];
 
   if (after != null) {
     wheres.push(buildOrderQuery(sortOrder, after, CursorType.AFTER));
@@ -271,6 +280,7 @@ async function getPage<Entity extends Model>(
   }
 
   if (wheres.length > 0) {
+    // @ts-ignore
     query.where = wheres.length === 1 ? wheres[0] : Sequelize.and(...wheres);
   }
 
