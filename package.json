@@ -1,6 +1,6 @@
 {
   "name": "@ephys/sequelize-cursor-pagination",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Implements Cursor Pagination in the Sequelize ORM",
   "main": "lib/index.js",
   "scripts": {
