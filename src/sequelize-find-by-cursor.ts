@@ -115,10 +115,12 @@ export async function sequelizeFindByCursor<Entity extends Model>(
   const primaryKeys: string[] = getPrimaryColumns(model)
     // sort by db name to ensure they are in the same order between restarts
     .sort((c1, c2) => c1.field.localeCompare(c2.field))
+    // @ts-expect-error
     .map(col => col.fieldName);
 
   const uniques: string[][] = [
     primaryKeys,
+    // @ts-expect-error
     ...getUniqueColumns(model).map(composite => composite.map(col => col.fieldName)),
   ];
 

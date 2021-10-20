@@ -1,6 +1,6 @@
 {
   "name": "@ephys/sequelize-cursor-pagination",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Implements Cursor Pagination in the Sequelize ORM",
   "main": "lib/index.js",
   "scripts": {
@@ -10,14 +10,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Ephys/sequelize-cursor-pagination.git"
+    "url": "git+https://github.com/ephys/sequelize-cursor-pagination.git"
   },
-  "author": "Guylian Cox <hello@guylian.me>",
+  "author": "Zoé Cox <zoe@ephys.dev>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Ephys/sequelize-cursor-pagination/issues"
+    "url": "https://github.com/ephys/sequelize-cursor-pagination/issues"
   },
-  "homepage": "https://github.com/Ephys/sequelize-cursor-pagination#readme",
+  "homepage": "https://github.com/ephys/sequelize-cursor-pagination#readme",
   "devDependencies": {
     "@babel/core": "^7.15.8",
     "@babel/preset-env": "^7.15.8",
