@@ -4,7 +4,7 @@
   "description": "Implements Cursor Pagination in the Sequelize ORM",
   "main": "lib/index.js",
   "scripts": {
-    "test": "eslint src/**/*.ts && jest",
+    "test": "eslint src/**/*.ts && jest src",
     "build": "tsc",
     "prepublishOnly": "npm test && npm run build"
   },
