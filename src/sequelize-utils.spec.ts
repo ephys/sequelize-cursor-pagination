@@ -73,3 +73,7 @@ describe('getPrimaryColumns', () => {
     expect(getPrimaryColumns(compositePkModel).map(col => col.field)).toEqual(['id1', 'id2']);
   });
 });
+
+afterAll(async () => {
+  return sequelize.close();
+});
