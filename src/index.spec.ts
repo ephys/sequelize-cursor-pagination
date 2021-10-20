@@ -1,4 +1,6 @@
-import { DataTypes, ModelCtor, Op, Sequelize } from 'sequelize';
+import type { ModelCtor } from 'sequelize';
+import { DataTypes, Op, Sequelize } from 'sequelize';
+import { TEST_databaseCredentials } from './__test-utils__/sequelize';
 import { sequelizeFindByCursor } from '.';
 
 let sequelize: Sequelize;
@@ -7,15 +9,7 @@ let userModel: ModelCtor<any>;
 // TODO: ensure hasPreviousPage, hasNextPage is returning the correct value.
 
 beforeAll(async () => {
-  sequelize = new Sequelize({
-    dialect: 'postgres',
-    port: 19132,
-    host: '0.0.0.0',
-    password: 'password',
-    username: 'user',
-    database: 'db',
-    logging: false,
-  });
+  sequelize = new Sequelize(TEST_databaseCredentials);
 
   userModel = sequelize.define('users', {
     id: {
@@ -23,6 +17,23 @@ beforeAll(async () => {
       primaryKey: true,
       autoIncrement: true,
     },
+
+    externalId: {
+      type: DataTypes.STRING,
+      unique: true,
+      allowNull: false,
+    },
+    compositeUnique1: {
+      type: DataTypes.STRING,
+      unique: 'composite',
+      allowNull: false,
+    },
+    compositeUnique2: {
+      type: DataTypes.STRING,
+      unique: 'composite',
+      allowNull: false,
+    },
+
     firstName: {
       field: 'first_name',
       type: DataTypes.TEXT,
@@ -38,7 +49,7 @@ beforeAll(async () => {
       type: DataTypes.DATEONLY,
       allowNull: false,
     },
-  });
+  }, {});
 
   await sequelize.sync({
     force: true,
@@ -46,31 +57,49 @@ beforeAll(async () => {
 
   await userModel.bulkCreate([{
     id: 5,
+    externalId: 'A',
+    compositeUnique1: 'A',
+    compositeUnique2: '1',
     firstName: 'Alan',
     lastName: 'LastName',
     birthDate: '2000-01-01',
   }, {
     id: 4,
+    externalId: 'B',
+    compositeUnique1: 'A',
+    compositeUnique2: '2',
     firstName: 'Bernard',
     lastName: 'LastName',
     birthDate: '1970-01-01',
   }, {
     id: 3,
+    externalId: 'C',
+    compositeUnique1: 'A',
+    compositeUnique2: '3',
     firstName: 'Cedric',
     lastName: 'Anderson',
     birthDate: '1980-01-01',
   }, {
     id: 2,
+    externalId: 'D',
+    compositeUnique1: 'A',
+    compositeUnique2: '4',
     firstName: 'Cedric',
     lastName: 'Brown',
     birthDate: '1960-01-01',
   }, {
     id: 6,
+    externalId: 'E',
+    compositeUnique1: 'A',
+    compositeUnique2: '5',
     firstName: 'Dimitri',
     lastName: 'LastName',
     birthDate: '1990-01-01',
   }, {
     id: 1,
+    externalId: 'F',
+    compositeUnique1: 'A',
+    compositeUnique2: '6',
     firstName: 'Dimitri',
     lastName: 'LastName',
     birthDate: '2010-01-01',
@@ -236,8 +265,52 @@ describe('sequelizeFindByCursor', () => {
     expect(await results.hasNextPage()).toBe(false);
     expect(await results.hasPreviousPage()).toBe(true);
   });
+
+  it('returns the keys used for the cursor (no unique specified: adds PK)', async () => {
+    const results = await sequelizeFindByCursor({
+      attributes: ['firstName', 'id'],
+      model: userModel,
+      first: 10,
+      order: [['firstName', 'ASC']],
+    });
+
+    expect(results.cursorKeys).toEqual(['firstName', 'id']);
+  });
+
+  it('returns the keys used for the cursor (Unique specified)', async () => {
+    const results = await sequelizeFindByCursor({
+      attributes: ['firstName', 'externalId'],
+      model: userModel,
+      first: 10,
+      order: [['firstName', 'ASC'], ['externalId', 'ASC']],
+    });
+
+    expect(results.cursorKeys).toEqual(['firstName', 'externalId']);
+  });
+
+  it('returns the keys used for the cursor (Composite unique partly specified: adds PK)', async () => {
+    const results = await sequelizeFindByCursor({
+      attributes: ['firstName', 'compositeUnique1'],
+      model: userModel,
+      first: 10,
+      order: [['firstName', 'ASC'], ['compositeUnique1', 'ASC']],
+    });
+
+    expect(results.cursorKeys).toEqual(['firstName', 'compositeUnique1', 'id']);
+  });
+
+  it('returns the keys used for the cursor (Composite unique fully specified)', async () => {
+    const results = await sequelizeFindByCursor({
+      attributes: ['firstName', 'compositeUnique1', 'compositeUnique2'],
+      model: userModel,
+      first: 10,
+      order: [['firstName', 'ASC'], ['compositeUnique1', 'ASC'], ['compositeUnique2', 'ASC']],
+    });
+
+    expect(results.cursorKeys).toEqual(['firstName', 'compositeUnique1', 'compositeUnique2']);
+  });
 });
 
-afterAll(() => {
+afterAll(async () => {
   return sequelize.close();
 });

@@ -1,8 +1,6 @@
-import {
+import type {
   Model,
   ModelCtor as ModelClass,
-  Sequelize,
-  Op,
   FindOptions,
   OrderItem as SequelizeOrderItem,
   Logging,
@@ -10,8 +8,12 @@ import {
   Projectable,
   Filterable,
 } from 'sequelize';
-import { getPrimaryColumns, matchAssociationReference } from './sequelize-utils';
-import { MaybePromise } from './types';
+import {
+  Sequelize,
+  Op,
+} from 'sequelize';
+import { getPrimaryColumns, getUniqueColumns, matchAssociationReference } from './sequelize-utils';
+import type { MaybePromise } from './types';
 
 /**
  * @module sequelize-find-by-cursor
@@ -26,55 +28,56 @@ export type ModelFinder<E> = (query) => Promise<E[]>;
 
 export type OrderTuple = [string, 'ASC' | 'DESC'];
 
-type Cursor = { [key: string]: any }
+type Cursor = { [key: string]: any };
 
 interface IDownPassed extends Logging, Transactionable, Projectable, Filterable<any> {}
 
 interface QueryMetadata<Entity extends Model> {
-  isLast: boolean,
-  limit: number,
+  isLast: boolean;
+  limit: number;
 
-  sortOrder: Array<OrderTuple>,
+  sortOrder: OrderTuple[];
 
-  after: Cursor | null,
-  before: Cursor | null,
+  after: Cursor | null;
+  before: Cursor | null;
 
-  findAll: ModelFinder<Entity>,
+  findAll: ModelFinder<Entity>;
 
-  passDown: IDownPassed,
+  passDown: IDownPassed;
 }
 
 export interface FindByCursorConfig<E extends Model> extends IDownPassed {
-  model: ModelClass<E>,
-  order: OrderTuple[],
+  model: ModelClass<E>;
+  order: OrderTuple[];
 
   /**
    * This is a cursor. If provided, only entities that are located before this cursor will be returned.
    *
    * The cursor is an object that must contain one value for each column used in the `order` property, plus the primary keys of the entity.
    */
-  before?: { [key: string]: any } | null,
+  before?: { [key: string]: any } | null;
 
   /**
    * This is a cursor. If provided, only entities that are located after this cursor will be returned.
    *
    * The cursor is an object that must contain one value for each column used in the `order` property, plus the primary keys of the entity.
    */
-  after?: { [key: string]: any } | null,
-  first?: number | null,
-  last?: number | null,
+  after?: { [key: string]: any } | null;
+  first?: number | null;
+  last?: number | null;
 
   /**
    * Use this to customise the query for your own needs if the provided options are not sufficient.
    * This option should be used as a last resort.
    */
-  findAll?: ModelFinder<E>,
+  findAll?: ModelFinder<E>;
 }
 
 export interface FindByCursorResult<T> {
-  nodes: T[],
-  hasNextPage: () => MaybePromise<boolean>,
-  hasPreviousPage: () => MaybePromise<boolean>,
+  nodes: T[];
+  hasNextPage(): MaybePromise<boolean>;
+  hasPreviousPage(): MaybePromise<boolean>;
+  cursorKeys: string[];
 }
 
 export async function sequelizeFindByCursor<Entity extends Model>(
@@ -83,7 +86,7 @@ export async function sequelizeFindByCursor<Entity extends Model>(
 
   const {
     model, order, after, before, first, last,
-    findAll = (query => config.model.findAll(query)),
+    findAll = (async query => config.model.findAll(query)),
     ...passDown
   } = config;
 
@@ -114,14 +117,19 @@ export async function sequelizeFindByCursor<Entity extends Model>(
     .sort((c1, c2) => c1.field.localeCompare(c2.field))
     .map(col => col.fieldName);
 
+  const uniques: string[][] = [
+    primaryKeys,
+    ...getUniqueColumns(model).map(composite => composite.map(col => col.fieldName)),
+  ];
+
   // sort by PK last to ensure the [where PK] (see #getPage) always returns the elements in the same order.
   const sortOrder: OrderTuple[] = [...order];
-  for (const primaryKey of primaryKeys) {
-    if (sortOrder.find(tuple => tuple[0] === primaryKey) != null) {
-      continue;
+  if (!sortOrderIncludesUnique(sortOrder, uniques)) {
+    for (const primaryKey of primaryKeys) {
+      if (!sortOrderHasField(sortOrder, primaryKey)) {
+        sortOrder.push([primaryKey, 'ASC']);
+      }
     }
-
-    sortOrder.push([primaryKey, 'ASC']);
   }
 
   const queryMetadata: QueryMetadata<Entity> = {
@@ -140,7 +148,32 @@ export async function sequelizeFindByCursor<Entity extends Model>(
     nodes,
     hasNextPage: () => hasNextPage(queryMetadata, hasMoreNodes),
     hasPreviousPage: () => hasPreviousPage(queryMetadata, hasMoreNodes),
+    cursorKeys: sortOrder.map(tuple => tuple[0]),
   };
+}
+
+function sortOrderIncludesUnique(order: OrderTuple[], compositeUniques: string[][]): boolean {
+  for (const compositeUnique of compositeUniques) {
+    if (sortOrderHasAllFields(order, compositeUnique)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function sortOrderHasAllFields(order: OrderTuple[], fields: string[]) {
+  for (const field of fields) {
+    if (!sortOrderHasField(order, field)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function sortOrderHasField(order: OrderTuple[], field: string): boolean {
+  return order.find(tuple => tuple[0] === field) != null;
 }
 
 /*
@@ -227,8 +260,8 @@ function reverseOrder(order) {
 }
 
 enum CursorType {
-  AFTER,
-  BEFORE,
+  AFTER = 0,
+  BEFORE = 1,
 }
 
 async function getPage<Entity extends Model>(
@@ -280,7 +313,7 @@ async function getPage<Entity extends Model>(
   }
 
   if (wheres.length > 0) {
-    // @ts-ignore
+    // @ts-expect-error
     query.where = wheres.length === 1 ? wheres[0] : Sequelize.and(...wheres);
   }
 
@@ -346,7 +379,7 @@ function buildOrderQuery(orderBy: OrderTuple[], cursor: Cursor, cursorType: Curs
     // orderQuery
     orderQuery = Sequelize.or(
       { [sortColumn]: { [operator]: cursor[sortColumn] } },
-      // @ts-ignore
+      // @ts-expect-error
       Sequelize.and(
         { [sortColumn]: cursor[sortColumn] },
         orderQuery,
