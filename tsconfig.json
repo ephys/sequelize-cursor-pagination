@@ -1,11 +1,12 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "ES2022",
     "moduleResolution": "Node",
     "outDir": "./lib",
     "declaration": true,
-    "module": "CommonJS"
+    "module": "CommonJS",
+    "lib": ["ES2022"],
+    "esModuleInterop": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules"]
 }
