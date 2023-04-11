@@ -1,11 +1,11 @@
-import type { ModelCtor } from 'sequelize';
-import { DataTypes, Sequelize } from 'sequelize';
+import type { ModelStatic } from '@sequelize/core';
+import { DataTypes, Sequelize } from '@sequelize/core';
 import { TEST_databaseCredentials } from './__test-utils__/sequelize';
-import { getPrimaryColumns, getUniqueColumns } from './sequelize-utils';
+import { getPrimaryAttributes, getUniqueColumns } from './sequelize-utils';
 
 let sequelize: Sequelize;
-let model: ModelCtor<any>;
-let compositePkModel: ModelCtor<any>;
+let model: ModelStatic<any>;
+let compositePkModel: ModelStatic<any>;
 
 beforeAll(async () => {
   sequelize = new Sequelize(TEST_databaseCredentials);
@@ -63,14 +63,14 @@ describe('getUniqueColumns', () => {
   it('returns all unique columns', () => {
     const out = getUniqueColumns(model);
     // TODO: expect ['optionsUnique'] too
-    expect(out.map(group => group.map(col => col.field))).toEqual([['compositeUnique1', 'compositeUnique2'], ['externalId']]);
+    expect(out.map(group => group.map(col => col.field))).toEqual([['optionsUnique'], ['externalId'], ['compositeUnique1', 'compositeUnique2']]);
   });
 });
 
 describe('getPrimaryColumns', () => {
   it('returns all PK columns', () => {
-    expect(getPrimaryColumns(model).map(col => col.field)).toEqual(['id']);
-    expect(getPrimaryColumns(compositePkModel).map(col => col.field)).toEqual(['id1', 'id2']);
+    expect(getPrimaryAttributes(model).map(col => col.field)).toEqual(['id']);
+    expect(getPrimaryAttributes(compositePkModel).map(col => col.field)).toEqual(['id1', 'id2']);
   });
 });
 

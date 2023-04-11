@@ -1,10 +1,10 @@
-import type { ModelCtor } from 'sequelize';
-import { DataTypes, Op, Sequelize } from 'sequelize';
+import type { ModelStatic } from '@sequelize/core';
+import { DataTypes, Op, Sequelize } from '@sequelize/core';
 import { TEST_databaseCredentials } from './__test-utils__/sequelize';
 import { sequelizeFindByCursor } from '.';
 
 let sequelize: Sequelize;
-let userModel: ModelCtor<any>;
+let userModel: ModelStatic<any>;
 
 // TODO: ensure hasPreviousPage, hasNextPage is returning the correct value.
 

@@ -1,18 +1,18 @@
 import type {
   Model,
-  ModelCtor as ModelClass,
+  ModelStatic,
   FindOptions,
   OrderItem as SequelizeOrderItem,
   Logging,
   Transactionable,
   Projectable,
   Filterable,
-} from 'sequelize';
+} from '@sequelize/core';
 import {
   Sequelize,
-  Op,
-} from 'sequelize';
-import { getPrimaryColumns, getUniqueColumns, matchAssociationReference } from './sequelize-utils';
+  Op, or, and,
+} from '@sequelize/core';
+import { getPrimaryAttributes, getUniqueColumns, matchAssociationReference } from './sequelize-utils';
 import type { MaybePromise } from './types';
 
 /**
@@ -47,7 +47,7 @@ interface QueryMetadata<Entity extends Model> {
 }
 
 export interface FindByCursorConfig<E extends Model> extends IDownPassed {
-  model: ModelClass<E>;
+  model: ModelStatic<E>;
   order: OrderTuple[];
 
   /**
@@ -112,16 +112,14 @@ export async function sequelizeFindByCursor<Entity extends Model>(
     throw new Error(`'first' and 'last' cannot be < 0`);
   }
 
-  const primaryKeys: string[] = getPrimaryColumns(model)
+  const primaryKeys: string[] = getPrimaryAttributes(model)
     // sort by db name to ensure they are in the same order between restarts
-    .sort((c1, c2) => c1.field.localeCompare(c2.field))
-    // @ts-expect-error
-    .map(col => col.fieldName);
+    .sort((c1, c2) => c1.columnName.localeCompare(c2.columnName))
+    .map(col => col.attributeName);
 
   const uniques: string[][] = [
     primaryKeys,
-    // @ts-expect-error
-    ...getUniqueColumns(model).map(composite => composite.map(col => col.fieldName)),
+    ...getUniqueColumns(model).map(composite => composite.map(col => col.attributeName)),
   ];
 
   // sort by PK last to ensure the [where PK] (see #getPage) always returns the elements in the same order.
@@ -175,7 +173,7 @@ function sortOrderHasAllFields(order: OrderTuple[], fields: string[]) {
 }
 
 function sortOrderHasField(order: OrderTuple[], field: string): boolean {
-  return order.find(tuple => tuple[0] === field) != null;
+  return order.some(tuple => tuple[0] === field);
 }
 
 /*
@@ -275,13 +273,14 @@ async function getPage<Entity extends Model>(
   const queryOrder = orderTupleToSequelizeOrder(isLast ? reverseOrder(sortOrder) : sortOrder);
   const query: FindOptions = {
     ...passDown, // Transactionable & Logging
-    limit: queryMetadata.limit,
+    // get one more result than needed to check if there are still results after this page
+    limit: queryMetadata.limit + 1,
     order: queryOrder,
 
     // subqueries are not compatible with referencing a joined table in `order`
     // TODO: This should be fixed in Sequelize, need a bug report
-    // @ts-expect-error
-    subQuery: queryOrder.find(item => item.length === 3) == null,
+    // @ts-expect-error -- not worth typing this as it is a temporary workaround
+    subQuery: !queryOrder.some(item => item.length === 3),
   };
 
   /*
@@ -315,12 +314,8 @@ async function getPage<Entity extends Model>(
   }
 
   if (wheres.length > 0) {
-    // @ts-expect-error
     query.where = wheres.length === 1 ? wheres[0] : Sequelize.and(...wheres);
   }
-
-  // get one more result than needed to check if there are still results after this
-  query.limit += 1;
 
   const currentPageResults: Entity[] = await findAll(query);
 
@@ -354,7 +349,7 @@ function buildOrderQuery(orderBy: OrderTuple[], cursor: Cursor, cursorType: Curs
   // we build the sort order from the inside out (starting with the last item, to the first)
   {
     // very last item: orderQuery = pk > after.pk
-    const lastSortEntry = orderBy[orderBy.length - 1];
+    const lastSortEntry = orderBy.at(-1);
     const [sortColumn, orderDirection] = lastSortEntry;
 
     const operator = operators[orderDirection];
@@ -379,10 +374,9 @@ function buildOrderQuery(orderBy: OrderTuple[], cursor: Cursor, cursorType: Curs
     }
 
     // orderQuery
-    orderQuery = Sequelize.or(
+    orderQuery = or(
       { [sortColumn]: { [operator]: cursor[sortColumn] } },
-      // @ts-expect-error
-      Sequelize.and(
+      and(
         { [sortColumn]: cursor[sortColumn] },
         orderQuery,
       ),
@@ -392,7 +386,7 @@ function buildOrderQuery(orderBy: OrderTuple[], cursor: Cursor, cursorType: Curs
   return orderQuery;
 }
 
-// TODO: PR sequelize to support $association.column$ in `order` as they already support it in `where`
+// TODO: PR sequelize to support $association.column$ in `order` as we already support it in `where`
 export function orderTupleToSequelizeOrder(orders: OrderTuple[]): SequelizeOrderItem[] {
   return orders.map(order => {
     const [column, direction] = order;

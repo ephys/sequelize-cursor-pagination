@@ -1,7 +1,7 @@
 version: '2'
 services:
-  mmc-psql:
-    image: postgres:12.2
+  sequelize-cursor-psql:
+    image: postgres:15.2-alpine
     container_name: sequelize-cursor-psql
     ports:
       - "19132:5432"

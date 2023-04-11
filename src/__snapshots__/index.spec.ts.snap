@@ -1,33 +1,33 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`sequelizeFindByCursor does not include extra PK in ORDER BY if it’s already present: nodes 1`] = `
-Array [
-  Object {
+[
+  {
     "firstName": "Alan",
     "id": 5,
     "lastName": "LastName",
   },
-  Object {
+  {
     "firstName": "Bernard",
     "id": 4,
     "lastName": "LastName",
   },
-  Object {
+  {
     "firstName": "Cedric",
     "id": 3,
     "lastName": "Anderson",
   },
-  Object {
+  {
     "firstName": "Cedric",
     "id": 2,
     "lastName": "Brown",
   },
-  Object {
+  {
     "firstName": "Dimitri",
     "id": 6,
     "lastName": "LastName",
   },
-  Object {
+  {
     "firstName": "Dimitri",
     "id": 1,
     "lastName": "LastName",
@@ -35,36 +35,36 @@ Array [
 ]
 `;
 
-exports[`sequelizeFindByCursor does not include extra PK in ORDER BY if it’s already present: query 1`] = `"Executing (default): SELECT \\"users\\".* FROM (SELECT \\"first_name\\" AS \\"firstName\\", \\"last_name\\" AS \\"lastName\\", \\"id\\" FROM \\"users\\" AS \\"users\\" ORDER BY \\"users\\".\\"first_name\\" ASC, \\"users\\".\\"last_name\\" ASC, \\"users\\".\\"id\\" DESC LIMIT 11) AS \\"users\\" ORDER BY \\"firstName\\" ASC, \\"lastName\\" ASC, \\"users\\".\\"id\\" DESC;"`;
+exports[`sequelizeFindByCursor does not include extra PK in ORDER BY if it’s already present: query 1`] = `"Executing (default): SELECT "users".* FROM (SELECT "first_name" AS "firstName", "last_name" AS "lastName", "id" FROM "users" AS "users" ORDER BY "users"."first_name" ASC, "users"."last_name" ASC, "users"."id" DESC LIMIT 11) AS "users" ORDER BY "firstName" ASC, "lastName" ASC, "users"."id" DESC;"`;
 
 exports[`sequelizeFindByCursor includes PK in ORDER BY to ensures constant order: nodes 1`] = `
-Array [
-  Object {
+[
+  {
     "firstName": "Alan",
     "id": 5,
     "lastName": "LastName",
   },
-  Object {
+  {
     "firstName": "Bernard",
     "id": 4,
     "lastName": "LastName",
   },
-  Object {
+  {
     "firstName": "Cedric",
     "id": 3,
     "lastName": "Anderson",
   },
-  Object {
+  {
     "firstName": "Cedric",
     "id": 2,
     "lastName": "Brown",
   },
-  Object {
+  {
     "firstName": "Dimitri",
     "id": 1,
     "lastName": "LastName",
   },
-  Object {
+  {
     "firstName": "Dimitri",
     "id": 6,
     "lastName": "LastName",
@@ -72,16 +72,16 @@ Array [
 ]
 `;
 
-exports[`sequelizeFindByCursor includes PK in ORDER BY to ensures constant order: query 1`] = `"Executing (default): SELECT \\"users\\".* FROM (SELECT \\"first_name\\" AS \\"firstName\\", \\"last_name\\" AS \\"lastName\\", \\"id\\" FROM \\"users\\" AS \\"users\\" ORDER BY \\"users\\".\\"first_name\\" ASC, \\"users\\".\\"last_name\\" ASC, \\"users\\".\\"id\\" ASC LIMIT 11) AS \\"users\\" ORDER BY \\"firstName\\" ASC, \\"lastName\\" ASC, \\"users\\".\\"id\\" ASC;"`;
+exports[`sequelizeFindByCursor includes PK in ORDER BY to ensures constant order: query 1`] = `"Executing (default): SELECT "users".* FROM (SELECT "first_name" AS "firstName", "last_name" AS "lastName", "id" FROM "users" AS "users" ORDER BY "users"."first_name" ASC, "users"."last_name" ASC, "users"."id" ASC LIMIT 11) AS "users" ORDER BY "firstName" ASC, "lastName" ASC, "users"."id" ASC;"`;
 
 exports[`sequelizeFindByCursor supports filtering: nodes 1`] = `
-Array [
-  Object {
+[
+  {
     "firstName": "Dimitri",
     "id": 1,
     "lastName": "LastName",
   },
-  Object {
+  {
     "firstName": "Dimitri",
     "id": 6,
     "lastName": "LastName",
@@ -89,18 +89,18 @@ Array [
 ]
 `;
 
-exports[`sequelizeFindByCursor supports filtering: query 1`] = `"Executing (default): SELECT \\"users\\".* FROM (SELECT \\"first_name\\" AS \\"firstName\\", \\"last_name\\" AS \\"lastName\\", \\"id\\" FROM \\"users\\" AS \\"users\\" WHERE (\\"users\\".\\"birth_date\\" >= '1990-01-01' AND (\\"users\\".\\"first_name\\" > 'Bernard' OR (\\"users\\".\\"first_name\\" = 'Bernard' AND (\\"users\\".\\"last_name\\" > 'LastName' OR (\\"users\\".\\"last_name\\" = 'LastName' AND \\"users\\".\\"id\\" > 4))))) ORDER BY \\"users\\".\\"first_name\\" ASC, \\"users\\".\\"last_name\\" ASC, \\"users\\".\\"id\\" ASC LIMIT 11) AS \\"users\\" ORDER BY \\"firstName\\" ASC, \\"lastName\\" ASC, \\"users\\".\\"id\\" ASC;"`;
+exports[`sequelizeFindByCursor supports filtering: query 1`] = `"Executing (default): SELECT "users".* FROM (SELECT "first_name" AS "firstName", "last_name" AS "lastName", "id" FROM "users" AS "users" WHERE ("users"."birth_date" >= '1990-01-01' AND ("users"."first_name" > 'Bernard' OR ("users"."first_name" = 'Bernard' AND ("users"."last_name" > 'LastName' OR ("users"."last_name" = 'LastName' AND "users"."id" > 4))))) ORDER BY "users"."first_name" ASC, "users"."last_name" ASC, "users"."id" ASC LIMIT 11) AS "users" ORDER BY "firstName" ASC, "lastName" ASC, "users"."id" ASC;"`;
 
-exports[`sequelizeFindByCursor supports filtering: query 2`] = `"Executing (default): SELECT \\"users\\".* FROM (SELECT \\"first_name\\" AS \\"firstName\\", \\"last_name\\" AS \\"lastName\\", \\"id\\" FROM \\"users\\" AS \\"users\\" WHERE (\\"users\\".\\"birth_date\\" >= '1990-01-01' AND (\\"users\\".\\"first_name\\" < 'Bernard' OR (\\"users\\".\\"first_name\\" = 'Bernard' AND (\\"users\\".\\"last_name\\" < 'LastName' OR (\\"users\\".\\"last_name\\" = 'LastName' AND \\"users\\".\\"id\\" < 4))))) ORDER BY \\"users\\".\\"first_name\\" DESC, \\"users\\".\\"last_name\\" DESC, \\"users\\".\\"id\\" DESC LIMIT 1) AS \\"users\\" ORDER BY \\"firstName\\" DESC, \\"lastName\\" DESC, \\"users\\".\\"id\\" DESC;"`;
+exports[`sequelizeFindByCursor supports filtering: query 2`] = `"Executing (default): SELECT "users".* FROM (SELECT "first_name" AS "firstName", "last_name" AS "lastName", "id" FROM "users" AS "users" WHERE ("users"."birth_date" >= '1990-01-01' AND ("users"."first_name" < 'Bernard' OR ("users"."first_name" = 'Bernard' AND ("users"."last_name" < 'LastName' OR ("users"."last_name" = 'LastName' AND "users"."id" < 4))))) ORDER BY "users"."first_name" DESC, "users"."last_name" DESC, "users"."id" DESC LIMIT 1) AS "users" ORDER BY "firstName" DESC, "lastName" DESC, "users"."id" DESC;"`;
 
 exports[`sequelizeFindByCursor supports returning the first x elements after another cursor: nodes 1`] = `
-Array [
-  Object {
+[
+  {
     "firstName": "Cedric",
     "id": 2,
     "lastName": "Brown",
   },
-  Object {
+  {
     "firstName": "Dimitri",
     "id": 1,
     "lastName": "LastName",
@@ -109,13 +109,13 @@ Array [
 `;
 
 exports[`sequelizeFindByCursor supports returning the first x elements before another cursor: nodes 1`] = `
-Array [
-  Object {
+[
+  {
     "firstName": "Alan",
     "id": 5,
     "lastName": "LastName",
   },
-  Object {
+  {
     "firstName": "Bernard",
     "id": 4,
     "lastName": "LastName",
@@ -124,13 +124,13 @@ Array [
 `;
 
 exports[`sequelizeFindByCursor supports returning the first x elements of the set: nodes 1`] = `
-Array [
-  Object {
+[
+  {
     "firstName": "Alan",
     "id": 5,
     "lastName": "LastName",
   },
-  Object {
+  {
     "firstName": "Bernard",
     "id": 4,
     "lastName": "LastName",
@@ -139,13 +139,13 @@ Array [
 `;
 
 exports[`sequelizeFindByCursor supports returning the last x elements after another cursor: nodes 1`] = `
-Array [
-  Object {
+[
+  {
     "firstName": "Dimitri",
     "id": 1,
     "lastName": "LastName",
   },
-  Object {
+  {
     "firstName": "Dimitri",
     "id": 6,
     "lastName": "LastName",
@@ -154,13 +154,13 @@ Array [
 `;
 
 exports[`sequelizeFindByCursor supports returning the last x elements before another cursor: nodes 1`] = `
-Array [
-  Object {
+[
+  {
     "firstName": "Cedric",
     "id": 3,
     "lastName": "Anderson",
   },
-  Object {
+  {
     "firstName": "Cedric",
     "id": 2,
     "lastName": "Brown",
@@ -169,13 +169,13 @@ Array [
 `;
 
 exports[`sequelizeFindByCursor supports returning the last x elements of the set: nodes 1`] = `
-Array [
-  Object {
+[
+  {
     "firstName": "Dimitri",
     "id": 1,
     "lastName": "LastName",
   },
-  Object {
+  {
     "firstName": "Dimitri",
     "id": 6,
     "lastName": "LastName",

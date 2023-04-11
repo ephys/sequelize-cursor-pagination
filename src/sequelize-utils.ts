@@ -1,15 +1,13 @@
 import type {
-  ModelCtor as ModelType,
+  ModelStatic,
   Model,
-  ModelAttributeColumnOptions,
-} from 'sequelize';
+  NormalizedAttributeOptions,
+} from '@sequelize/core';
 
-type Column<E extends Model> = ModelAttributeColumnOptions<E>;
+export function getPrimaryAttributes<E extends Model>(model: ModelStatic<E>): Array<NormalizedAttributeOptions<E>> {
+  const columns: Array<NormalizedAttributeOptions<E>> = [];
 
-export function getPrimaryColumns<E extends Model>(model: ModelType<E>): Array<Column<E>> {
-  const columns: Array<Column<E>> = [];
-
-  for (const value of Object.values(model.rawAttributes)) {
+  for (const value of model.modelDefinition.attributes.values()) {
     if (value.primaryKey) {
       columns.push(value);
     }
@@ -18,39 +16,33 @@ export function getPrimaryColumns<E extends Model>(model: ModelType<E>): Array<C
   return columns;
 }
 
-export function getUniqueColumns<E extends Model>(model: ModelType<E>): Array<Array<Column<E>>> {
-  const compositeUniques: Map<string, Array<Column<E>>> = new Map();
-  const singleUniques: Array<Column<E>> = [];
+export function getUniqueColumns<E extends Model>(model: ModelStatic<E>): Array<Array<NormalizedAttributeOptions<E>>> {
+  const uniqueAttributes: Array<Array<NormalizedAttributeOptions<E>>> = [];
 
-  for (const value of Object.values(model.rawAttributes)) {
-    if (value.unique == null || value.unique === false) {
+  const { modelDefinition } = model;
+  const attributes = modelDefinition.attributes;
+
+  for (const index of modelDefinition.getIndexes()) {
+    if (!index.unique) {
       continue;
     }
 
-    if (value.unique === true) {
-      singleUniques.push(value);
+    if (!index.fields.every(field => typeof field === 'string')) {
       continue;
     }
 
-    const name = typeof value.unique === 'string' ? value.unique : value.unique.name;
-    const compositeUnique = compositeUniques.get(name) ?? [];
-    compositeUnique.push(value);
-    compositeUniques.set(name, compositeUnique);
+    const indexAttributes = index.fields.map(columnName => {
+      return find(attributes.values(), attr => attr.columnName === columnName);
+    });
+
+    if (indexAttributes.includes(undefined)) {
+      continue;
+    }
+
+    uniqueAttributes.push(indexAttributes);
   }
 
-  // TODO
-  // for (const index of model.options.indexes) {
-  //   if (!index.unique) {
-  //     continue;
-  //   }
-  //
-  //   index.fields
-  // }
-
-  return [
-    ...compositeUniques.values(),
-    ...singleUniques.map(v => [v]),
-  ];
+  return uniqueAttributes;
 }
 
 /**
@@ -66,4 +58,15 @@ export function matchAssociationReference(column: string): null | [string, strin
   }
 
   return [match[1], match[2]];
+}
+
+export function find<Val>(iterable: Iterable<Val>, cb: (item: Val) => boolean): Val | undefined {
+  for (const item of iterable) {
+    if (cb(item)) {
+      return item;
+    }
+  }
+
+  // eslint-disable-next-line consistent-return
+  return undefined;
 }
