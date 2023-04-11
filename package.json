@@ -1,6 +1,6 @@
 {
   "name": "@ephys/sequelize-cursor-pagination",
-  "version": "7.0.0-alpha.23",
+  "version": "7.0.0-alpha.25",
   "description": "Implements Cursor Pagination in the Sequelize ORM",
   "main": "lib/index.js",
   "scripts": {
@@ -32,7 +32,7 @@
     "pg-hstore": "^2.3.4",
     "typescript": "^5.0.4"
   },
-  "dependencies": {
-    "@sequelize/core": "^7.0.0-alpha.23"
+  "peerDependencies": {
+    "@sequelize/core": "^7.0.0-alpha.25"
   }
 }
