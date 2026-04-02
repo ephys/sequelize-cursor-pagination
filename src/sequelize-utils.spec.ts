@@ -1,5 +1,8 @@
 import type { ModelStatic } from '@sequelize/core';
 import { DataTypes, Sequelize } from '@sequelize/core';
+// eslint-disable-next-line no-restricted-imports
+import assert from 'node:assert/strict';
+import { after, before, describe, it } from 'node:test';
 import { TEST_databaseCredentials } from './__test-utils__/sequelize.js';
 import { getPrimaryAttributes, getUniqueColumns } from './sequelize-utils.js';
 
@@ -7,7 +10,7 @@ let sequelize: Sequelize;
 let model: ModelStatic<any>;
 let compositePkModel: ModelStatic<any>;
 
-beforeAll(async () => {
+before(async () => {
   sequelize = new Sequelize(TEST_databaseCredentials);
 
   model = sequelize.define(
@@ -69,25 +72,30 @@ describe('getUniqueColumns', () => {
   it('returns all unique columns', () => {
     const out = getUniqueColumns(model);
     // TODO: expect ['optionsUnique'] too
-    expect(out.map((group) => group.map((col) => col.columnName))).toEqual([
-      ['optionsUnique'],
-      ['externalId'],
-      ['compositeUnique1', 'compositeUnique2'],
-    ]);
+    assert.deepStrictEqual(
+      out.map((group) => group.map((col) => col.columnName)),
+      [
+        ['optionsUnique'],
+        ['externalId'],
+        ['compositeUnique1', 'compositeUnique2'],
+      ],
+    );
   });
 });
 
 describe('getPrimaryColumns', () => {
   it('returns all PK columns', () => {
-    expect(getPrimaryAttributes(model).map((col) => col.columnName)).toEqual([
-      'id',
-    ]);
-    expect(
+    assert.deepStrictEqual(
+      getPrimaryAttributes(model).map((col) => col.columnName),
+      ['id'],
+    );
+    assert.deepStrictEqual(
       getPrimaryAttributes(compositePkModel).map((col) => col.columnName),
-    ).toEqual(['id1', 'id2']);
+      ['id1', 'id2'],
+    );
   });
 });
 
-afterAll(async () => {
-  return sequelize.close();
+after(async () => {
+  await sequelize.close();
 });

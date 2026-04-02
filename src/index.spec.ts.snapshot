@@ -1,0 +1,280 @@
+exports[`sequelizeFindByCursor > does not include extra PK in ORDER BY if it's already present 1`] = `
+"Executing (default): SELECT \\"User\\".* FROM (SELECT \\"first_name\\" AS \\"firstName\\", \\"last_name\\" AS \\"lastName\\", \\"id\\" FROM \\"Users\\" AS \\"User\\" ORDER BY \\"User\\".\\"first_name\\" ASC, \\"User\\".\\"last_name\\" ASC, \\"User\\".\\"id\\" DESC LIMIT 11) AS \\"User\\" ORDER BY \\"firstName\\" ASC, \\"lastName\\" ASC, \\"User\\".\\"id\\" DESC;"
+`;
+
+exports[`sequelizeFindByCursor > does not include extra PK in ORDER BY if it's already present 2`] = `
+[
+  {
+    "firstName": "Alan",
+    "lastName": "LastName",
+    "id": 5
+  },
+  {
+    "firstName": "Bernard",
+    "lastName": "LastName",
+    "id": 4
+  },
+  {
+    "firstName": "Cedric",
+    "lastName": "Anderson",
+    "id": 3
+  },
+  {
+    "firstName": "Cedric",
+    "lastName": "Brown",
+    "id": 2
+  },
+  {
+    "firstName": "Dimitri",
+    "lastName": "LastName",
+    "id": 6
+  },
+  {
+    "firstName": "Dimitri",
+    "lastName": "LastName",
+    "id": 1
+  }
+]
+`;
+
+exports[`sequelizeFindByCursor > includes PK in ORDER BY to ensures constant order 1`] = `
+"Executing (default): SELECT \\"User\\".* FROM (SELECT \\"first_name\\" AS \\"firstName\\", \\"last_name\\" AS \\"lastName\\", \\"id\\" FROM \\"Users\\" AS \\"User\\" ORDER BY \\"User\\".\\"first_name\\" ASC, \\"User\\".\\"last_name\\" ASC, \\"User\\".\\"id\\" ASC LIMIT 11) AS \\"User\\" ORDER BY \\"firstName\\" ASC, \\"lastName\\" ASC, \\"User\\".\\"id\\" ASC;"
+`;
+
+exports[`sequelizeFindByCursor > includes PK in ORDER BY to ensures constant order 2`] = `
+[
+  {
+    "firstName": "Alan",
+    "lastName": "LastName",
+    "id": 5
+  },
+  {
+    "firstName": "Bernard",
+    "lastName": "LastName",
+    "id": 4
+  },
+  {
+    "firstName": "Cedric",
+    "lastName": "Anderson",
+    "id": 3
+  },
+  {
+    "firstName": "Cedric",
+    "lastName": "Brown",
+    "id": 2
+  },
+  {
+    "firstName": "Dimitri",
+    "lastName": "LastName",
+    "id": 1
+  },
+  {
+    "firstName": "Dimitri",
+    "lastName": "LastName",
+    "id": 6
+  }
+]
+`;
+
+exports[`sequelizeFindByCursor > offset: can be combined with after cursor (first) 1`] = `
+[
+  {
+    "firstName": "Dimitri",
+    "lastName": "LastName",
+    "id": 1
+  },
+  {
+    "firstName": "Dimitri",
+    "lastName": "LastName",
+    "id": 6
+  }
+]
+`;
+
+exports[`sequelizeFindByCursor > offset: can be combined with after cursor (last) 1`] = `
+[
+  {
+    "firstName": "Cedric",
+    "lastName": "Brown",
+    "id": 2
+  },
+  {
+    "firstName": "Dimitri",
+    "lastName": "LastName",
+    "id": 1
+  }
+]
+`;
+
+exports[`sequelizeFindByCursor > offset: can be combined with before cursor (first) 1`] = `
+[
+  {
+    "firstName": "Bernard",
+    "lastName": "LastName",
+    "id": 4
+  },
+  {
+    "firstName": "Cedric",
+    "lastName": "Anderson",
+    "id": 3
+  }
+]
+`;
+
+exports[`sequelizeFindByCursor > offset: can be combined with before cursor (last) 1`] = `
+[
+  {
+    "firstName": "Cedric",
+    "lastName": "Anderson",
+    "id": 3
+  },
+  {
+    "firstName": "Cedric",
+    "lastName": "Brown",
+    "id": 2
+  }
+]
+`;
+
+exports[`sequelizeFindByCursor > offset: skips the first N items when using first 1`] = `
+[
+  {
+    "firstName": "Cedric",
+    "lastName": "Anderson",
+    "id": 3
+  },
+  {
+    "firstName": "Cedric",
+    "lastName": "Brown",
+    "id": 2
+  }
+]
+`;
+
+exports[`sequelizeFindByCursor > offset: skips the last N items when using last 1`] = `
+[
+  {
+    "firstName": "Cedric",
+    "lastName": "Anderson",
+    "id": 3
+  },
+  {
+    "firstName": "Cedric",
+    "lastName": "Brown",
+    "id": 2
+  }
+]
+`;
+
+exports[`sequelizeFindByCursor > supports filtering 1`] = `
+"Executing (default): SELECT \\"User\\".* FROM (SELECT \\"first_name\\" AS \\"firstName\\", \\"last_name\\" AS \\"lastName\\", \\"id\\" FROM \\"Users\\" AS \\"User\\" WHERE \\"User\\".\\"birth_date\\" >= '1990-01-01' AND (\\"User\\".\\"first_name\\" > 'Bernard' OR (\\"User\\".\\"first_name\\" = 'Bernard' AND (\\"User\\".\\"last_name\\" > 'LastName' OR (\\"User\\".\\"last_name\\" = 'LastName' AND \\"User\\".\\"id\\" > 4)))) ORDER BY \\"User\\".\\"first_name\\" ASC, \\"User\\".\\"last_name\\" ASC, \\"User\\".\\"id\\" ASC LIMIT 11) AS \\"User\\" ORDER BY \\"firstName\\" ASC, \\"lastName\\" ASC, \\"User\\".\\"id\\" ASC;"
+`;
+
+exports[`sequelizeFindByCursor > supports filtering 2`] = `
+[
+  {
+    "firstName": "Dimitri",
+    "lastName": "LastName",
+    "id": 1
+  },
+  {
+    "firstName": "Dimitri",
+    "lastName": "LastName",
+    "id": 6
+  }
+]
+`;
+
+exports[`sequelizeFindByCursor > supports filtering 3`] = `
+"Executing (default): SELECT \\"User\\".* FROM (SELECT \\"first_name\\" AS \\"firstName\\", \\"last_name\\" AS \\"lastName\\", \\"id\\" FROM \\"Users\\" AS \\"User\\" WHERE \\"User\\".\\"birth_date\\" >= '1990-01-01' AND (\\"User\\".\\"first_name\\" < 'Bernard' OR (\\"User\\".\\"first_name\\" = 'Bernard' AND (\\"User\\".\\"last_name\\" < 'LastName' OR (\\"User\\".\\"last_name\\" = 'LastName' AND \\"User\\".\\"id\\" < 4)))) ORDER BY \\"User\\".\\"first_name\\" DESC, \\"User\\".\\"last_name\\" DESC, \\"User\\".\\"id\\" DESC LIMIT 1) AS \\"User\\" ORDER BY \\"firstName\\" DESC, \\"lastName\\" DESC, \\"User\\".\\"id\\" DESC;"
+`;
+
+exports[`sequelizeFindByCursor > supports returning the first x elements after another cursor 1`] = `
+[
+  {
+    "firstName": "Cedric",
+    "lastName": "Brown",
+    "id": 2
+  },
+  {
+    "firstName": "Dimitri",
+    "lastName": "LastName",
+    "id": 1
+  }
+]
+`;
+
+exports[`sequelizeFindByCursor > supports returning the first x elements before another cursor 1`] = `
+[
+  {
+    "firstName": "Alan",
+    "lastName": "LastName",
+    "id": 5
+  },
+  {
+    "firstName": "Bernard",
+    "lastName": "LastName",
+    "id": 4
+  }
+]
+`;
+
+exports[`sequelizeFindByCursor > supports returning the first x elements of the set 1`] = `
+[
+  {
+    "firstName": "Alan",
+    "lastName": "LastName",
+    "id": 5
+  },
+  {
+    "firstName": "Bernard",
+    "lastName": "LastName",
+    "id": 4
+  }
+]
+`;
+
+exports[`sequelizeFindByCursor > supports returning the last x elements after another cursor 1`] = `
+[
+  {
+    "firstName": "Dimitri",
+    "lastName": "LastName",
+    "id": 1
+  },
+  {
+    "firstName": "Dimitri",
+    "lastName": "LastName",
+    "id": 6
+  }
+]
+`;
+
+exports[`sequelizeFindByCursor > supports returning the last x elements before another cursor 1`] = `
+[
+  {
+    "firstName": "Cedric",
+    "lastName": "Anderson",
+    "id": 3
+  },
+  {
+    "firstName": "Cedric",
+    "lastName": "Brown",
+    "id": 2
+  }
+]
+`;
+
+exports[`sequelizeFindByCursor > supports returning the last x elements of the set 1`] = `
+[
+  {
+    "firstName": "Dimitri",
+    "lastName": "LastName",
+    "id": 1
+  },
+  {
+    "firstName": "Dimitri",
+    "lastName": "LastName",
+    "id": 6
+  }
+]
+`;
