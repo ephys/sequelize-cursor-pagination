@@ -3,6 +3,7 @@ import type {
   Model,
   NormalizedAttributeOptions,
 } from "@sequelize/core";
+import { isString, type NonNullish } from "@sequelize/utils";
 
 export function getPrimaryAttributes<E extends Model>(
   model: ModelStatic<E>,
@@ -32,7 +33,7 @@ export function getUniqueColumns<E extends Model>(
     }
 
     // We only support string indexes
-    if (!index.fields?.every((field) => typeof field === "string")) {
+    if (!index.fields?.every(isString)) {
       continue;
     }
 
@@ -44,8 +45,8 @@ export function getUniqueColumns<E extends Model>(
     });
 
     const filteredAttributes = indexAttributes.filter(
-      (attr): attr is NonNullable<typeof attr> => attr !== undefined,
-    ) as NormalizedAttributeOptions<E>[];
+      (attr): attr is NonNullish<typeof attr> => attr !== undefined,
+    ) as Array<NormalizedAttributeOptions<E>>;
 
     if (filteredAttributes.length !== indexAttributes.length) {
       continue;

@@ -6,11 +6,11 @@
   "type": "module",
   "scripts": {
     "test": "npm run test:eslint && npm run test:prettier && npm run test:unit",
-    "test:eslint": "eslint src/**/*.ts",
+    "test:eslint": "eslint src",
     "test:prettier": "prettier --check .",
     "test:unit": "jest src --runInBand",
     "format": "npm run format:eslint && npm run format:prettier",
-    "format:eslint": "eslint src/**/*.ts --fix",
+    "format:eslint": "eslint src --fix",
     "format:prettier": "prettier --write .",
     "build": "tsc",
     "prepublishOnly": "npm test && npm run build"
@@ -41,5 +41,8 @@
   },
   "peerDependencies": {
     "@sequelize/core": "^7.0.0-alpha.48"
+  },
+  "dependencies": {
+    "@sequelize/utils": "^7.0.0-alpha.48"
   }
 }

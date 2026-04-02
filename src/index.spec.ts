@@ -358,6 +358,204 @@ describe("sequelizeFindByCursor", () => {
       "compositeUnique2",
     ]);
   });
+
+  // Offset pagination tests
+  // Ordered set: Alan(5), Bernard(4), Cedric Anderson(3), Cedric Brown(2), Dimitri(1), Dimitri(6)
+
+  it("offset: skips the first N items when using first", async () => {
+    // first:2 offset:2 → skip Alan, Bernard → Cedric Anderson(3), Cedric Brown(2)
+    const results = await sequelizeFindByCursor({
+      attributes: ["firstName", "lastName", "id"],
+      model: userModel,
+      first: 2,
+      offset: 2,
+      order: [
+        ["firstName", "ASC"],
+        ["lastName", "ASC"],
+      ],
+    });
+
+    expect(results.nodes).toMatchSnapshot("nodes");
+    expect(await results.hasPreviousPage()).toBe(true);
+    expect(await results.hasNextPage()).toBe(true);
+  });
+
+  it("offset: skips the last N items when using last", async () => {
+    // last:2 offset:2 → skip Dimitri(1), Dimitri(6) from end → Cedric Anderson(3), Cedric Brown(2)
+    const results = await sequelizeFindByCursor({
+      attributes: ["firstName", "lastName", "id"],
+      model: userModel,
+      last: 2,
+      offset: 2,
+      order: [
+        ["firstName", "ASC"],
+        ["lastName", "ASC"],
+      ],
+    });
+
+    expect(results.nodes).toMatchSnapshot("nodes");
+    expect(await results.hasPreviousPage()).toBe(true);
+    expect(await results.hasNextPage()).toBe(true);
+  });
+
+  it("offset: can be combined with after cursor (first)", async () => {
+    // after: Cedric Anderson(3) → set is [Cedric Brown(2), Dimitri(1), Dimitri(6)]
+    // offset:1, first:2 → skip Cedric Brown(2) → Dimitri(1), Dimitri(6)
+    const results = await sequelizeFindByCursor({
+      attributes: ["firstName", "lastName", "id"],
+      model: userModel,
+      first: 2,
+      offset: 1,
+      after: {
+        id: 3,
+        firstName: "Cedric",
+        lastName: "Anderson",
+      },
+      order: [
+        ["firstName", "ASC"],
+        ["lastName", "ASC"],
+      ],
+    });
+
+    expect(results.nodes).toMatchSnapshot("nodes");
+    expect(await results.hasPreviousPage()).toBe(true);
+    expect(await results.hasNextPage()).toBe(false);
+  });
+
+  it("offset: can be combined with after cursor (last)", async () => {
+    // after: Cedric Anderson(3) → set is [Cedric Brown(2), Dimitri(1), Dimitri(6)]
+    // offset:1, last:2 → skip Dimitri(6) from end → Cedric Brown(2), Dimitri(1)
+    const results = await sequelizeFindByCursor({
+      attributes: ["firstName", "lastName", "id"],
+      model: userModel,
+      last: 2,
+      offset: 1,
+      after: {
+        id: 3,
+        firstName: "Cedric",
+        lastName: "Anderson",
+      },
+      order: [
+        ["firstName", "ASC"],
+        ["lastName", "ASC"],
+      ],
+    });
+
+    expect(results.nodes).toMatchSnapshot("nodes");
+    expect(await results.hasPreviousPage()).toBe(false);
+    expect(await results.hasNextPage()).toBe(true);
+  });
+
+  it("offset: can be combined with before cursor (last)", async () => {
+    // before: Dimitri(6) → set is [Alan(5), Bernard(4), Cedric Anderson(3), Cedric Brown(2), Dimitri(1)]
+    // offset:1, last:2 → skip Dimitri(1) from end → Cedric Anderson(3), Cedric Brown(2)
+    const results = await sequelizeFindByCursor({
+      attributes: ["firstName", "lastName", "id"],
+      model: userModel,
+      last: 2,
+      offset: 1,
+      before: {
+        id: 6,
+        firstName: "Dimitri",
+        lastName: "LastName",
+      },
+      order: [
+        ["firstName", "ASC"],
+        ["lastName", "ASC"],
+      ],
+    });
+
+    expect(results.nodes).toMatchSnapshot("nodes");
+    expect(await results.hasPreviousPage()).toBe(true);
+    expect(await results.hasNextPage()).toBe(true);
+  });
+
+  it("offset: can be combined with before cursor (first)", async () => {
+    // before: Dimitri(6) → set is [Alan(5), Bernard(4), Cedric Anderson(3), Cedric Brown(2), Dimitri(1)]
+    // offset:1, first:2 → skip Alan(5) → Bernard(4), Cedric Anderson(3)
+    const results = await sequelizeFindByCursor({
+      attributes: ["firstName", "lastName", "id"],
+      model: userModel,
+      first: 2,
+      offset: 1,
+      before: {
+        id: 6,
+        firstName: "Dimitri",
+        lastName: "LastName",
+      },
+      order: [
+        ["firstName", "ASC"],
+        ["lastName", "ASC"],
+      ],
+    });
+
+    expect(results.nodes).toMatchSnapshot("nodes");
+    expect(await results.hasPreviousPage()).toBe(true);
+    expect(await results.hasNextPage()).toBe(true);
+  });
+
+  it("offset: offset beyond available items returns empty result", async () => {
+    // 6 total items, offset:10, first:2 → nothing to return
+    const results = await sequelizeFindByCursor({
+      attributes: ["firstName", "lastName", "id"],
+      model: userModel,
+      first: 2,
+      offset: 10,
+      order: [
+        ["firstName", "ASC"],
+        ["lastName", "ASC"],
+      ],
+    });
+
+    expect(results.nodes).toHaveLength(0);
+    expect(await results.hasPreviousPage()).toBe(true);
+    expect(await results.hasNextPage()).toBe(false);
+  });
+
+  it("offset: offset=0 is equivalent to no offset (first)", async () => {
+    const withOffset = await sequelizeFindByCursor({
+      attributes: ["firstName", "lastName", "id"],
+      model: userModel,
+      first: 3,
+      offset: 0,
+      order: [
+        ["firstName", "ASC"],
+        ["lastName", "ASC"],
+      ],
+    });
+
+    const withoutOffset = await sequelizeFindByCursor({
+      attributes: ["firstName", "lastName", "id"],
+      model: userModel,
+      first: 3,
+      order: [
+        ["firstName", "ASC"],
+        ["lastName", "ASC"],
+      ],
+    });
+
+    expect(withOffset.nodes.map((n: any) => n.id)).toEqual(
+      withoutOffset.nodes.map((n: any) => n.id),
+    );
+    expect(await withOffset.hasPreviousPage()).toBe(
+      await withoutOffset.hasPreviousPage(),
+    );
+    expect(await withOffset.hasNextPage()).toBe(
+      await withoutOffset.hasNextPage(),
+    );
+  });
+
+  it("offset: throws when offset is negative", async () => {
+    await expect(
+      sequelizeFindByCursor({
+        attributes: ["firstName", "lastName", "id"],
+        model: userModel,
+        first: 2,
+        offset: -1,
+        order: [["firstName", "ASC"]],
+      }),
+    ).rejects.toThrow(`'offset' must be a non-negative safe integer`);
+  });
 });
 
 afterAll(async () => {

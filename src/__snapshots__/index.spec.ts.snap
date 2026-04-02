@@ -74,6 +74,96 @@ exports[`sequelizeFindByCursor includes PK in ORDER BY to ensures constant order
 
 exports[`sequelizeFindByCursor includes PK in ORDER BY to ensures constant order: query 1`] = `"Executing (default): SELECT "User".* FROM (SELECT "first_name" AS "firstName", "last_name" AS "lastName", "id" FROM "Users" AS "User" ORDER BY "User"."first_name" ASC, "User"."last_name" ASC, "User"."id" ASC LIMIT 11) AS "User" ORDER BY "firstName" ASC, "lastName" ASC, "User"."id" ASC;"`;
 
+exports[`sequelizeFindByCursor offset: can be combined with after cursor (first): nodes 1`] = `
+[
+  {
+    "firstName": "Dimitri",
+    "id": 1,
+    "lastName": "LastName",
+  },
+  {
+    "firstName": "Dimitri",
+    "id": 6,
+    "lastName": "LastName",
+  },
+]
+`;
+
+exports[`sequelizeFindByCursor offset: can be combined with after cursor (last): nodes 1`] = `
+[
+  {
+    "firstName": "Cedric",
+    "id": 2,
+    "lastName": "Brown",
+  },
+  {
+    "firstName": "Dimitri",
+    "id": 1,
+    "lastName": "LastName",
+  },
+]
+`;
+
+exports[`sequelizeFindByCursor offset: can be combined with before cursor (first): nodes 1`] = `
+[
+  {
+    "firstName": "Bernard",
+    "id": 4,
+    "lastName": "LastName",
+  },
+  {
+    "firstName": "Cedric",
+    "id": 3,
+    "lastName": "Anderson",
+  },
+]
+`;
+
+exports[`sequelizeFindByCursor offset: can be combined with before cursor (last): nodes 1`] = `
+[
+  {
+    "firstName": "Cedric",
+    "id": 3,
+    "lastName": "Anderson",
+  },
+  {
+    "firstName": "Cedric",
+    "id": 2,
+    "lastName": "Brown",
+  },
+]
+`;
+
+exports[`sequelizeFindByCursor offset: skips the first N items when using first: nodes 1`] = `
+[
+  {
+    "firstName": "Cedric",
+    "id": 3,
+    "lastName": "Anderson",
+  },
+  {
+    "firstName": "Cedric",
+    "id": 2,
+    "lastName": "Brown",
+  },
+]
+`;
+
+exports[`sequelizeFindByCursor offset: skips the last N items when using last: nodes 1`] = `
+[
+  {
+    "firstName": "Cedric",
+    "id": 3,
+    "lastName": "Anderson",
+  },
+  {
+    "firstName": "Cedric",
+    "id": 2,
+    "lastName": "Brown",
+  },
+]
+`;
+
 exports[`sequelizeFindByCursor supports filtering: nodes 1`] = `
 [
   {

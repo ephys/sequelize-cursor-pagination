@@ -31,8 +31,7 @@ export type OrderTuple = [string, "ASC" | "DESC"];
 
 type Cursor = { [key: string]: any };
 
-interface IDownPassed
-  extends Logging, Transactionable, Projectable, Filterable<any> {}
+interface Context extends Logging, Transactionable, Projectable, Filterable {}
 
 interface QueryMetadata<Entity extends Model> {
   after: Cursor | null;
@@ -42,13 +41,14 @@ interface QueryMetadata<Entity extends Model> {
 
   isLast: boolean;
   limit: number;
+  offset: number;
 
-  passDown: IDownPassed;
+  passDown: Context;
 
   sortOrder: OrderTuple[];
 }
 
-export interface FindByCursorConfig<E extends Model> extends IDownPassed {
+export interface FindByCursorConfig<E extends Model> extends Context {
   /**
    * This is a cursor. If provided, only entities that are located after this cursor will be returned.
    *
@@ -71,6 +71,13 @@ export interface FindByCursorConfig<E extends Model> extends IDownPassed {
   first?: number | null;
   last?: number | null;
   model: ModelStatic<E>;
+
+  /**
+   * Number of items to skip from the start of the cursor-filtered set.
+   * Can be combined with `after` or `before`.
+   * Defaults to 0.
+   */
+  offset?: number | null;
 
   order: OrderTuple[];
 }
@@ -95,6 +102,7 @@ export async function sequelizeFindByCursor<Entity extends Model>(
     before,
     first,
     last,
+    offset,
     findAll = async (query) => config.model.findAll(query),
     ...passDown
   } = config;
@@ -125,6 +133,11 @@ export async function sequelizeFindByCursor<Entity extends Model>(
     throw new Error(`'first' and 'last' cannot be < 0`);
   }
 
+  const resolvedOffset = offset ?? 0;
+  if (!Number.isSafeInteger(resolvedOffset) || resolvedOffset < 0) {
+    throw new Error(`'offset' must be a non-negative safe integer`);
+  }
+
   const primaryKeys: string[] = getPrimaryAttributes(model)
     // sort by db name to ensure they are in the same order between restarts
     .sort((c1, c2) => c1.columnName.localeCompare(c2.columnName))
@@ -150,6 +163,7 @@ export async function sequelizeFindByCursor<Entity extends Model>(
   const queryMetadata: QueryMetadata<Entity> = {
     isLast: last != null,
     limit,
+    offset: resolvedOffset,
     sortOrder,
     after: after ?? null,
     before: before ?? null,
@@ -212,6 +226,11 @@ function hasPreviousPage(
     return hasMoreNodes;
   }
 
+  // Items were skipped at the start of the cursor-filtered set
+  if (queryMetadata.offset > 0) {
+    return true;
+  }
+
   if (queryMetadata.after) {
     return getPage({
       ...queryMetadata,
@@ -247,6 +266,11 @@ function hasNextPage(
 ) {
   if (!queryMetadata.isLast) {
     return hasMoreNodes;
+  }
+
+  // Items were skipped at the end of the cursor-filtered set
+  if (queryMetadata.offset > 0) {
+    return true;
   }
 
   if (queryMetadata.before) {
@@ -295,6 +319,7 @@ async function getPage<Entity extends Model>(
     ...passDown, // Transactionable & Logging
     // get one more result than needed to check if there are still results after this page
     limit: queryMetadata.limit + 1,
+    offset: queryMetadata.offset,
     order: queryOrder,
 
     // subqueries are not compatible with referencing a joined table in `order`
