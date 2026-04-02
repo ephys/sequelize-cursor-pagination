@@ -7,13 +7,14 @@ import type {
   Transactionable,
   Projectable,
   Filterable,
-} from '@sequelize/core';
+} from "@sequelize/core";
+import { Sequelize, Op, or, and } from "@sequelize/core";
 import {
-  Sequelize,
-  Op, or, and,
-} from '@sequelize/core';
-import { getPrimaryAttributes, getUniqueColumns, matchAssociationReference } from './sequelize-utils';
-import type { MaybePromise } from './types';
+  getPrimaryAttributes,
+  getUniqueColumns,
+  matchAssociationReference,
+} from "./sequelize-utils";
+import type { MaybePromise } from "./types";
 
 /**
  * @module sequelize-find-by-cursor
@@ -26,11 +27,12 @@ import type { MaybePromise } from './types';
 
 export type ModelFinder<E> = (query) => Promise<E[]>;
 
-export type OrderTuple = [string, 'ASC' | 'DESC'];
+export type OrderTuple = [string, "ASC" | "DESC"];
 
 type Cursor = { [key: string]: any };
 
-interface IDownPassed extends Logging, Transactionable, Projectable, Filterable<any> {}
+interface IDownPassed
+  extends Logging, Transactionable, Projectable, Filterable<any> {}
 
 interface QueryMetadata<Entity extends Model> {
   isLast: boolean;
@@ -83,10 +85,14 @@ export interface FindByCursorResult<T> {
 export async function sequelizeFindByCursor<Entity extends Model>(
   config: FindByCursorConfig<Entity>,
 ): Promise<FindByCursorResult<Entity>> {
-
   const {
-    model, order, after, before, first, last,
-    findAll = (async query => config.model.findAll(query)),
+    model,
+    order,
+    after,
+    before,
+    first,
+    last,
+    findAll = async (query) => config.model.findAll(query),
     ...passDown
   } = config;
 
@@ -96,7 +102,9 @@ export async function sequelizeFindByCursor<Entity extends Model>(
 
   if (after && before) {
     // TODO
-    throw new Error(`Having both 'before' and 'after' is not currently supported. PR welcome.`);
+    throw new Error(
+      `Having both 'before' and 'after' is not currently supported. PR welcome.`,
+    );
   }
 
   if (first != null && last != null) {
@@ -105,7 +113,9 @@ export async function sequelizeFindByCursor<Entity extends Model>(
 
   const limit = first || last;
   if (!Number.isSafeInteger(limit)) {
-    throw new Error(`'first' and 'last' must be safe integers, and one of them must be provided.`);
+    throw new Error(
+      `'first' and 'last' must be safe integers, and one of them must be provided.`,
+    );
   }
 
   if (limit < 0) {
@@ -115,11 +125,13 @@ export async function sequelizeFindByCursor<Entity extends Model>(
   const primaryKeys: string[] = getPrimaryAttributes(model)
     // sort by db name to ensure they are in the same order between restarts
     .sort((c1, c2) => c1.columnName.localeCompare(c2.columnName))
-    .map(col => col.attributeName);
+    .map((col) => col.attributeName);
 
   const uniques: string[][] = [
     primaryKeys,
-    ...getUniqueColumns(model).map(composite => composite.map(col => col.attributeName)),
+    ...getUniqueColumns(model).map((composite) =>
+      composite.map((col) => col.attributeName),
+    ),
   ];
 
   // sort by PK last to ensure the [where PK] (see #getPage) always returns the elements in the same order.
@@ -127,7 +139,7 @@ export async function sequelizeFindByCursor<Entity extends Model>(
   if (!sortOrderIncludesUnique(sortOrder, uniques)) {
     for (const primaryKey of primaryKeys) {
       if (!sortOrderHasField(sortOrder, primaryKey)) {
-        sortOrder.push([primaryKey, 'ASC']);
+        sortOrder.push([primaryKey, "ASC"]);
       }
     }
   }
@@ -148,11 +160,14 @@ export async function sequelizeFindByCursor<Entity extends Model>(
     nodes,
     hasNextPage: () => hasNextPage(queryMetadata, hasMoreNodes),
     hasPreviousPage: () => hasPreviousPage(queryMetadata, hasMoreNodes),
-    cursorKeys: sortOrder.map(tuple => tuple[0]),
+    cursorKeys: sortOrder.map((tuple) => tuple[0]),
   };
 }
 
-function sortOrderIncludesUnique(order: OrderTuple[], compositeUniques: string[][]): boolean {
+function sortOrderIncludesUnique(
+  order: OrderTuple[],
+  compositeUniques: string[][],
+): boolean {
   for (const compositeUnique of compositeUniques) {
     if (sortOrderHasAllFields(order, compositeUnique)) {
       return true;
@@ -173,7 +188,7 @@ function sortOrderHasAllFields(order: OrderTuple[], fields: string[]) {
 }
 
 function sortOrderHasField(order: OrderTuple[], field: string): boolean {
-  return order.some(tuple => tuple[0] === field);
+  return order.some((tuple) => tuple[0] === field);
 }
 
 /*
@@ -187,7 +202,6 @@ function sortOrderHasField(order: OrderTuple[], field: string): boolean {
   3. Return false.
 */
 function hasPreviousPage(queryMetadata, hasMoreNodes) {
-
   if (queryMetadata.isLast) {
     return hasMoreNodes;
   }
@@ -205,7 +219,7 @@ function hasPreviousPage(queryMetadata, hasMoreNodes) {
       // we take 0 items because getPage will by default take 1 more
       // for hasMoreNodes
       limit: 0,
-    }).then(results => results.hasMoreNodes);
+    }).then((results) => results.hasMoreNodes);
   }
 
   return false;
@@ -222,7 +236,6 @@ function hasPreviousPage(queryMetadata, hasMoreNodes) {
   3. Return false.
 */
 function hasNextPage(queryMetadata, hasMoreNodes) {
-
   if (!queryMetadata.isLast) {
     return hasMoreNodes;
   }
@@ -239,7 +252,7 @@ function hasNextPage(queryMetadata, hasMoreNodes) {
       // we take 0 items because getPage will by default take 1 more
       // for hasMoreNodes
       limit: 0,
-    }).then(results => {
+    }).then((results) => {
       return results.hasMoreNodes;
     });
   }
@@ -252,8 +265,8 @@ function reverseOrder(order) {
     return order;
   }
 
-  return order.map(orderPart => {
-    const direction = orderPart[1] === 'ASC' ? 'DESC' : 'ASC';
+  return order.map((orderPart) => {
+    const direction = orderPart[1] === "ASC" ? "DESC" : "ASC";
 
     return [orderPart[0], direction];
   });
@@ -266,11 +279,12 @@ enum CursorType {
 
 async function getPage<Entity extends Model>(
   queryMetadata: QueryMetadata<Entity>,
-): Promise<{ nodes: Entity[], hasMoreNodes: boolean }> {
-
+): Promise<{ nodes: Entity[]; hasMoreNodes: boolean }> {
   const { sortOrder, after, before, isLast, findAll, passDown } = queryMetadata;
 
-  const queryOrder = orderTupleToSequelizeOrder(isLast ? reverseOrder(sortOrder) : sortOrder);
+  const queryOrder = orderTupleToSequelizeOrder(
+    isLast ? reverseOrder(sortOrder) : sortOrder,
+  );
   const query: FindOptions = {
     ...passDown, // Transactionable & Logging
     // get one more result than needed to check if there are still results after this page
@@ -280,7 +294,7 @@ async function getPage<Entity extends Model>(
     // subqueries are not compatible with referencing a joined table in `order`
     // TODO: This should be fixed in Sequelize, need a bug report
     // @ts-expect-error -- not worth typing this as it is a temporary workaround
-    subQuery: !queryOrder.some(item => item.length === 3),
+    subQuery: !queryOrder.some((item) => item.length === 3),
   };
 
   /*
@@ -335,14 +349,21 @@ async function getPage<Entity extends Model>(
   return { nodes: currentPageResults, hasMoreNodes: hasMoreResults };
 }
 
-function buildOrderQuery(orderBy: OrderTuple[], cursor: Cursor, cursorType: CursorType) {
-  const operators = cursorType === CursorType.AFTER ? {
-    ASC: Op.gt,
-    DESC: Op.lt,
-  } : {
-    ASC: Op.lt,
-    DESC: Op.gt,
-  };
+function buildOrderQuery(
+  orderBy: OrderTuple[],
+  cursor: Cursor,
+  cursorType: CursorType,
+) {
+  const operators =
+    cursorType === CursorType.AFTER
+      ? {
+          ASC: Op.gt,
+          DESC: Op.lt,
+        }
+      : {
+          ASC: Op.lt,
+          DESC: Op.gt,
+        };
 
   let orderQuery;
 
@@ -376,10 +397,7 @@ function buildOrderQuery(orderBy: OrderTuple[], cursor: Cursor, cursorType: Curs
     // orderQuery
     orderQuery = or(
       { [sortColumn]: { [operator]: cursor[sortColumn] } },
-      and(
-        { [sortColumn]: cursor[sortColumn] },
-        orderQuery,
-      ),
+      and({ [sortColumn]: cursor[sortColumn] }, orderQuery),
     );
   }
 
@@ -387,8 +405,10 @@ function buildOrderQuery(orderBy: OrderTuple[], cursor: Cursor, cursorType: Curs
 }
 
 // TODO: PR sequelize to support $association.column$ in `order` as we already support it in `where`
-export function orderTupleToSequelizeOrder(orders: OrderTuple[]): SequelizeOrderItem[] {
-  return orders.map(order => {
+export function orderTupleToSequelizeOrder(
+  orders: OrderTuple[],
+): SequelizeOrderItem[] {
+  return orders.map((order) => {
     const [column, direction] = order;
 
     const associationReference = matchAssociationReference(column);

@@ -2,9 +2,11 @@ import type {
   ModelStatic,
   Model,
   NormalizedAttributeOptions,
-} from '@sequelize/core';
+} from "@sequelize/core";
 
-export function getPrimaryAttributes<E extends Model>(model: ModelStatic<E>): Array<NormalizedAttributeOptions<E>> {
+export function getPrimaryAttributes<E extends Model>(
+  model: ModelStatic<E>,
+): Array<NormalizedAttributeOptions<E>> {
   const columns: Array<NormalizedAttributeOptions<E>> = [];
 
   for (const value of model.modelDefinition.attributes.values()) {
@@ -16,7 +18,9 @@ export function getPrimaryAttributes<E extends Model>(model: ModelStatic<E>): Ar
   return columns;
 }
 
-export function getUniqueColumns<E extends Model>(model: ModelStatic<E>): Array<Array<NormalizedAttributeOptions<E>>> {
+export function getUniqueColumns<E extends Model>(
+  model: ModelStatic<E>,
+): Array<Array<NormalizedAttributeOptions<E>>> {
   const uniqueAttributes: Array<Array<NormalizedAttributeOptions<E>>> = [];
 
   const { modelDefinition } = model;
@@ -27,12 +31,15 @@ export function getUniqueColumns<E extends Model>(model: ModelStatic<E>): Array<
       continue;
     }
 
-    if (!index.fields.every(field => typeof field === 'string')) {
+    if (!index.fields.every((field) => typeof field === "string")) {
       continue;
     }
 
-    const indexAttributes = index.fields.map(columnName => {
-      return find(attributes.values(), attr => attr.columnName === columnName);
+    const indexAttributes = index.fields.map((columnName) => {
+      return find(
+        attributes.values(),
+        (attr) => attr.columnName === columnName,
+      );
     });
 
     if (indexAttributes.includes(undefined)) {
@@ -50,7 +57,9 @@ export function getUniqueColumns<E extends Model>(model: ModelStatic<E>): Array<
  * @returns {null | [string, string]} an array of [associationName, associationColumn] if the provided parameter is an association reference,
  * that is a string following the format '$associationName.associationColumn$
  */
-export function matchAssociationReference(column: string): null | [string, string] {
+export function matchAssociationReference(
+  column: string,
+): null | [string, string] {
   const match = column.match(/^\$([^.]+)\.(.+)\$$/);
 
   if (!match) {
@@ -60,7 +69,10 @@ export function matchAssociationReference(column: string): null | [string, strin
   return [match[1], match[2]];
 }
 
-export function find<Val>(iterable: Iterable<Val>, cb: (item: Val) => boolean): Val | undefined {
+export function find<Val>(
+  iterable: Iterable<Val>,
+  cb: (item: Val) => boolean,
+): Val | undefined {
   for (const item of iterable) {
     if (cb(item)) {
       return item;

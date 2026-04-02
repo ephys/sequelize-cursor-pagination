@@ -1,4 +1,4 @@
-version: '2'
+version: "2"
 services:
   sequelize-cursor-psql:
     image: postgres:15.2-alpine

@@ -1,8 +1,0 @@
-{
-  "extends":[
-    "@ephys/eslint-config-typescript"
-  ],
-  "rules": {
-    "unicorn/prefer-type-error": "off"
-  }
-}
