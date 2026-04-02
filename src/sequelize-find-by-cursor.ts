@@ -24,7 +24,7 @@ import {
  * @link https://facebook.github.io/relay/graphql/connections.htm
  */
 
-export type ModelFinder<E> = (query: FindOptions) => Promise<E[]>;
+export type ModelFinder<E> = (query: FindOptions) => Promise<readonly E[]>;
 
 export type OrderTuple = [string, 'ASC' | 'DESC'];
 
@@ -44,7 +44,7 @@ interface QueryMetadata<Entity extends Model> {
 
   passDown: Context;
 
-  sortOrder: OrderTuple[];
+  sortOrder: readonly OrderTuple[];
 }
 
 export interface FindByCursorConfig<E extends Model> extends Context {
@@ -79,11 +79,11 @@ export interface FindByCursorConfig<E extends Model> extends Context {
    */
   offset?: number | null;
 
-  order: OrderTuple[];
+  order: readonly OrderTuple[];
 }
 
 export interface FindByCursorResult<T> {
-  cursorKeys: string[];
+  cursorKeys: readonly string[];
 
   /**
    * Returns the total number of records matching the base filters (ignoring cursor and pagination).
@@ -95,7 +95,7 @@ export interface FindByCursorResult<T> {
 
   hasPreviousPage(): Promise<boolean>;
 
-  nodes: T[];
+  nodes: readonly T[];
 }
 
 export async function sequelizeFindByCursor<Entity extends Model>(
@@ -311,7 +311,7 @@ async function hasNextPage(
   return false;
 }
 
-function reverseOrder(order: OrderTuple[]): OrderTuple[] {
+function reverseOrder(order: readonly OrderTuple[]): readonly OrderTuple[] {
   return order.map(
     ([column, direction]): OrderTuple => [
       column,
@@ -380,10 +380,10 @@ async function getPage<Entity extends Model>(
     query.where = wheres.length === 1 ? wheres[0] : and(...wheres);
   }
 
-  const currentPageResults: Entity[] = await findAll(query);
+  let currentPageResults: Entity[] = [...(await findAll(query))];
 
   if (queryMetadata.isLast) {
-    currentPageResults.reverse();
+    currentPageResults = currentPageResults.reverse();
   }
 
   const hasMoreResults = currentPageResults.length === queryMetadata.limit + 1;
@@ -399,7 +399,7 @@ async function getPage<Entity extends Model>(
 }
 
 function buildOrderQuery(
-  orderBy: OrderTuple[],
+  orderBy: readonly OrderTuple[],
   cursor: Cursor,
   cursorType: CursorType,
 ) {
@@ -459,7 +459,7 @@ function buildOrderQuery(
 
 // TODO: PR sequelize to support $association.column$ in `order` as we already support it in `where`
 export function orderTupleToSequelizeOrder(
-  orders: OrderTuple[],
+  orders: readonly OrderTuple[],
 ): SequelizeOrderItem[] {
   return orders.map((order) => {
     const [column, direction] = order;
