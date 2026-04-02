@@ -1,6 +1,6 @@
 {
   "name": "@ephys/sequelize-cursor-pagination",
-  "version": "7.0.0-alpha.48",
+  "version": "7.0.0-alpha.48.1",
   "description": "Implements Cursor Pagination in the Sequelize ORM",
   "main": "lib/index.js",
   "type": "module",
