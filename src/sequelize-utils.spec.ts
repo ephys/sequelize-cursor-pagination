@@ -11,7 +11,7 @@ beforeAll(async () => {
   sequelize = new Sequelize(TEST_databaseCredentials);
 
   model = sequelize.define(
-    "users",
+    "User",
     {
       id: {
         type: DataTypes.INTEGER,
@@ -49,20 +49,16 @@ beforeAll(async () => {
     },
   );
 
-  compositePkModel = sequelize.define(
-    "users",
-    {
-      id1: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-      },
-      id2: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-      },
+  compositePkModel = sequelize.define("CompositePkUser", {
+    id1: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
     },
-    {},
-  );
+    id2: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+    },
+  });
 
   await sequelize.sync({
     force: true,
@@ -73,7 +69,7 @@ describe("getUniqueColumns", () => {
   it("returns all unique columns", () => {
     const out = getUniqueColumns(model);
     // TODO: expect ['optionsUnique'] too
-    expect(out.map((group) => group.map((col) => col.field))).toEqual([
+    expect(out.map((group) => group.map((col) => col.columnName))).toEqual([
       ["optionsUnique"],
       ["externalId"],
       ["compositeUnique1", "compositeUnique2"],
@@ -83,9 +79,11 @@ describe("getUniqueColumns", () => {
 
 describe("getPrimaryColumns", () => {
   it("returns all PK columns", () => {
-    expect(getPrimaryAttributes(model).map((col) => col.field)).toEqual(["id"]);
+    expect(getPrimaryAttributes(model).map((col) => col.columnName)).toEqual([
+      "id",
+    ]);
     expect(
-      getPrimaryAttributes(compositePkModel).map((col) => col.field),
+      getPrimaryAttributes(compositePkModel).map((col) => col.columnName),
     ).toEqual(["id1", "id2"]);
   });
 });

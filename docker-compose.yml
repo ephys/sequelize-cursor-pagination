@@ -1,7 +1,6 @@
-version: "2"
 services:
   sequelize-cursor-psql:
-    image: postgres:15.2-alpine
+    image: postgres:18-alpine
     container_name: sequelize-cursor-psql
     ports:
       - "19132:5432"

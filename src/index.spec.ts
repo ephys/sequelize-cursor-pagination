@@ -11,49 +11,45 @@ let userModel: ModelStatic<any>;
 beforeAll(async () => {
   sequelize = new Sequelize(TEST_databaseCredentials);
 
-  userModel = sequelize.define(
-    "users",
-    {
-      id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true,
-      },
-
-      externalId: {
-        type: DataTypes.STRING,
-        unique: true,
-        allowNull: false,
-      },
-      compositeUnique1: {
-        type: DataTypes.STRING,
-        unique: "composite",
-        allowNull: false,
-      },
-      compositeUnique2: {
-        type: DataTypes.STRING,
-        unique: "composite",
-        allowNull: false,
-      },
-
-      firstName: {
-        field: "first_name",
-        type: DataTypes.TEXT,
-        allowNull: false,
-      },
-      lastName: {
-        field: "last_name",
-        type: DataTypes.TEXT,
-        allowNull: false,
-      },
-      birthDate: {
-        field: "birth_date",
-        type: DataTypes.DATEONLY,
-        allowNull: false,
-      },
+  userModel = sequelize.define("User", {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
     },
-    {},
-  );
+
+    externalId: {
+      type: DataTypes.STRING,
+      unique: true,
+      allowNull: false,
+    },
+    compositeUnique1: {
+      type: DataTypes.STRING,
+      unique: "composite",
+      allowNull: false,
+    },
+    compositeUnique2: {
+      type: DataTypes.STRING,
+      unique: "composite",
+      allowNull: false,
+    },
+
+    firstName: {
+      field: "first_name",
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
+    lastName: {
+      field: "last_name",
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
+    birthDate: {
+      field: "birth_date",
+      type: DataTypes.DATEONLY,
+      allowNull: false,
+    },
+  });
 
   await sequelize.sync({
     force: true,

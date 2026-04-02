@@ -31,7 +31,8 @@ export function getUniqueColumns<E extends Model>(
       continue;
     }
 
-    if (!index.fields.every((field) => typeof field === "string")) {
+    // We only support string indexes
+    if (!index.fields?.every((field) => typeof field === "string")) {
       continue;
     }
 
@@ -42,11 +43,15 @@ export function getUniqueColumns<E extends Model>(
       );
     });
 
-    if (indexAttributes.includes(undefined)) {
+    const filteredAttributes = indexAttributes.filter(
+      (attr): attr is NonNullable<typeof attr> => attr !== undefined,
+    ) as NormalizedAttributeOptions<E>[];
+
+    if (filteredAttributes.length !== indexAttributes.length) {
       continue;
     }
 
-    uniqueAttributes.push(indexAttributes);
+    uniqueAttributes.push(filteredAttributes);
   }
 
   return uniqueAttributes;
@@ -79,6 +84,5 @@ export function find<Val>(
     }
   }
 
-  // eslint-disable-next-line consistent-return
   return undefined;
 }

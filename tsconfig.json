@@ -6,7 +6,8 @@
     "declaration": true,
     "module": "CommonJS",
     "lib": ["ES2022"],
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "types": ["jest", "node"]
   },
   "include": ["src/**/*"]
 }

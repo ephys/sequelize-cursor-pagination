@@ -5,10 +5,10 @@
   "main": "lib/index.js",
   "type": "module",
   "scripts": {
-    "test": "npm run test:eslint && npm run test:prettier && npm run test:jest",
+    "test": "npm run test:eslint && npm run test:prettier && npm run test:unit",
     "test:eslint": "eslint src/**/*.ts",
     "test:prettier": "prettier --check .",
-    "test:jest": "jest src",
+    "test:unit": "jest src --runInBand",
     "format": "npm run format:eslint && npm run format:prettier",
     "format:eslint": "eslint src/**/*.ts --fix",
     "format:prettier": "prettier --write .",
@@ -27,6 +27,7 @@
   "homepage": "https://github.com/ephys/sequelize-cursor-pagination#readme",
   "devDependencies": {
     "@ephys/eslint-config-typescript": "^21.0.1",
+    "@sequelize/postgres": "^7.0.0-alpha.48",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.12.0",
     "eslint": "^9.39.4",
@@ -35,6 +36,7 @@
     "pg-hstore": "^2.3.4",
     "prettier": "^3.8.1",
     "prettier-plugin-organize-imports": "^4.3.0",
+    "ts-jest": "^29.4.9",
     "typescript": "^6.0.2"
   },
   "peerDependencies": {

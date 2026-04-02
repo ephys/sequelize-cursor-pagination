@@ -25,7 +25,7 @@ import type { MaybePromise } from "./types";
  * @link https://facebook.github.io/relay/graphql/connections.htm
  */
 
-export type ModelFinder<E> = (query) => Promise<E[]>;
+export type ModelFinder<E> = (query: FindOptions) => Promise<E[]>;
 
 export type OrderTuple = [string, "ASC" | "DESC"];
 
@@ -35,23 +35,26 @@ interface IDownPassed
   extends Logging, Transactionable, Projectable, Filterable<any> {}
 
 interface QueryMetadata<Entity extends Model> {
-  isLast: boolean;
-  limit: number;
-
-  sortOrder: OrderTuple[];
-
   after: Cursor | null;
   before: Cursor | null;
 
   findAll: ModelFinder<Entity>;
 
+  isLast: boolean;
+  limit: number;
+
   passDown: IDownPassed;
+
+  sortOrder: OrderTuple[];
 }
 
 export interface FindByCursorConfig<E extends Model> extends IDownPassed {
-  model: ModelStatic<E>;
-  order: OrderTuple[];
-
+  /**
+   * This is a cursor. If provided, only entities that are located after this cursor will be returned.
+   *
+   * The cursor is an object that must contain one value for each column used in the `order` property, plus the primary keys of the entity.
+   */
+  after?: { [key: string]: any } | null;
   /**
    * This is a cursor. If provided, only entities that are located before this cursor will be returned.
    *
@@ -60,26 +63,26 @@ export interface FindByCursorConfig<E extends Model> extends IDownPassed {
   before?: { [key: string]: any } | null;
 
   /**
-   * This is a cursor. If provided, only entities that are located after this cursor will be returned.
-   *
-   * The cursor is an object that must contain one value for each column used in the `order` property, plus the primary keys of the entity.
-   */
-  after?: { [key: string]: any } | null;
-  first?: number | null;
-  last?: number | null;
-
-  /**
    * Use this to customise the query for your own needs if the provided options are not sufficient.
    * This option should be used as a last resort.
    */
   findAll?: ModelFinder<E>;
+
+  first?: number | null;
+  last?: number | null;
+  model: ModelStatic<E>;
+
+  order: OrderTuple[];
 }
 
 export interface FindByCursorResult<T> {
-  nodes: T[];
-  hasNextPage(): MaybePromise<boolean>;
-  hasPreviousPage(): MaybePromise<boolean>;
   cursorKeys: string[];
+
+  hasNextPage(): MaybePromise<boolean>;
+
+  hasPreviousPage(): MaybePromise<boolean>;
+
+  nodes: T[];
 }
 
 export async function sequelizeFindByCursor<Entity extends Model>(
@@ -111,8 +114,8 @@ export async function sequelizeFindByCursor<Entity extends Model>(
     throw new Error(`Having both 'first' and 'last' is not supported.`);
   }
 
-  const limit = first || last;
-  if (!Number.isSafeInteger(limit)) {
+  const limit = first ?? last;
+  if (limit == null || !Number.isSafeInteger(limit)) {
     throw new Error(
       `'first' and 'last' must be safe integers, and one of them must be provided.`,
     );
@@ -148,8 +151,8 @@ export async function sequelizeFindByCursor<Entity extends Model>(
     isLast: last != null,
     limit,
     sortOrder,
-    after,
-    before,
+    after: after ?? null,
+    before: before ?? null,
     findAll,
     passDown,
   };
@@ -201,7 +204,10 @@ function sortOrderHasField(order: OrderTuple[], field: string): boolean {
     a. If the server can efficiently determine that elements exist prior to after, return true.
   3. Return false.
 */
-function hasPreviousPage(queryMetadata, hasMoreNodes) {
+function hasPreviousPage(
+  queryMetadata: QueryMetadata<Model>,
+  hasMoreNodes: boolean,
+) {
   if (queryMetadata.isLast) {
     return hasMoreNodes;
   }
@@ -235,7 +241,10 @@ function hasPreviousPage(queryMetadata, hasMoreNodes) {
     a. If the server can efficiently determine that elements exist following before, return true.
   3. Return false.
 */
-function hasNextPage(queryMetadata, hasMoreNodes) {
+function hasNextPage(
+  queryMetadata: QueryMetadata<Model>,
+  hasMoreNodes: boolean,
+) {
   if (!queryMetadata.isLast) {
     return hasMoreNodes;
   }
@@ -260,16 +269,13 @@ function hasNextPage(queryMetadata, hasMoreNodes) {
   return false;
 }
 
-function reverseOrder(order) {
-  if (!order) {
-    return order;
-  }
-
-  return order.map((orderPart) => {
-    const direction = orderPart[1] === "ASC" ? "DESC" : "ASC";
-
-    return [orderPart[0], direction];
-  });
+function reverseOrder(order: OrderTuple[]): OrderTuple[] {
+  return order.map(
+    ([column, direction]): OrderTuple => [
+      column,
+      direction === "ASC" ? "DESC" : "ASC",
+    ],
+  );
 }
 
 enum CursorType {
@@ -279,7 +285,7 @@ enum CursorType {
 
 async function getPage<Entity extends Model>(
   queryMetadata: QueryMetadata<Entity>,
-): Promise<{ nodes: Entity[]; hasMoreNodes: boolean }> {
+): Promise<{ hasMoreNodes: boolean; nodes: Entity[] }> {
   const { sortOrder, after, before, isLast, findAll, passDown } = queryMetadata;
 
   const queryOrder = orderTupleToSequelizeOrder(
@@ -371,6 +377,10 @@ function buildOrderQuery(
   {
     // very last item: orderQuery = pk > after.pk
     const lastSortEntry = orderBy.at(-1);
+    if (!lastSortEntry) {
+      throw new Error("orderBy cannot be empty");
+    }
+
     const [sortColumn, orderDirection] = lastSortEntry;
 
     const operator = operators[orderDirection];
@@ -387,7 +397,7 @@ function buildOrderQuery(
   // subsequent items:
   // orderQuery = lastName > after.lastName OR (lastName = after.lastName AND {orderQuery})
   for (let i = orderBy.length - 2; i >= 0; i--) {
-    const [sortColumn, orderDirection]: [string, string] = orderBy[i];
+    const [sortColumn, orderDirection]: OrderTuple = orderBy[i];
     const operator = operators[orderDirection];
 
     if (!(sortColumn in cursor)) {

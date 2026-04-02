@@ -1,4 +1,4 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
 exports[`sequelizeFindByCursor does not include extra PK in ORDER BY if it’s already present: nodes 1`] = `
 [
@@ -35,7 +35,7 @@ exports[`sequelizeFindByCursor does not include extra PK in ORDER BY if it’s a
 ]
 `;
 
-exports[`sequelizeFindByCursor does not include extra PK in ORDER BY if it’s already present: query 1`] = `"Executing (default): SELECT "users".* FROM (SELECT "first_name" AS "firstName", "last_name" AS "lastName", "id" FROM "users" AS "users" ORDER BY "users"."first_name" ASC, "users"."last_name" ASC, "users"."id" DESC LIMIT 11) AS "users" ORDER BY "firstName" ASC, "lastName" ASC, "users"."id" DESC;"`;
+exports[`sequelizeFindByCursor does not include extra PK in ORDER BY if it’s already present: query 1`] = `"Executing (default): SELECT "User".* FROM (SELECT "first_name" AS "firstName", "last_name" AS "lastName", "id" FROM "Users" AS "User" ORDER BY "User"."first_name" ASC, "User"."last_name" ASC, "User"."id" DESC LIMIT 11) AS "User" ORDER BY "firstName" ASC, "lastName" ASC, "User"."id" DESC;"`;
 
 exports[`sequelizeFindByCursor includes PK in ORDER BY to ensures constant order: nodes 1`] = `
 [
@@ -72,7 +72,7 @@ exports[`sequelizeFindByCursor includes PK in ORDER BY to ensures constant order
 ]
 `;
 
-exports[`sequelizeFindByCursor includes PK in ORDER BY to ensures constant order: query 1`] = `"Executing (default): SELECT "users".* FROM (SELECT "first_name" AS "firstName", "last_name" AS "lastName", "id" FROM "users" AS "users" ORDER BY "users"."first_name" ASC, "users"."last_name" ASC, "users"."id" ASC LIMIT 11) AS "users" ORDER BY "firstName" ASC, "lastName" ASC, "users"."id" ASC;"`;
+exports[`sequelizeFindByCursor includes PK in ORDER BY to ensures constant order: query 1`] = `"Executing (default): SELECT "User".* FROM (SELECT "first_name" AS "firstName", "last_name" AS "lastName", "id" FROM "Users" AS "User" ORDER BY "User"."first_name" ASC, "User"."last_name" ASC, "User"."id" ASC LIMIT 11) AS "User" ORDER BY "firstName" ASC, "lastName" ASC, "User"."id" ASC;"`;
 
 exports[`sequelizeFindByCursor supports filtering: nodes 1`] = `
 [
@@ -89,9 +89,9 @@ exports[`sequelizeFindByCursor supports filtering: nodes 1`] = `
 ]
 `;
 
-exports[`sequelizeFindByCursor supports filtering: query 1`] = `"Executing (default): SELECT "users".* FROM (SELECT "first_name" AS "firstName", "last_name" AS "lastName", "id" FROM "users" AS "users" WHERE ("users"."birth_date" >= '1990-01-01' AND ("users"."first_name" > 'Bernard' OR ("users"."first_name" = 'Bernard' AND ("users"."last_name" > 'LastName' OR ("users"."last_name" = 'LastName' AND "users"."id" > 4))))) ORDER BY "users"."first_name" ASC, "users"."last_name" ASC, "users"."id" ASC LIMIT 11) AS "users" ORDER BY "firstName" ASC, "lastName" ASC, "users"."id" ASC;"`;
+exports[`sequelizeFindByCursor supports filtering: query 1`] = `"Executing (default): SELECT "User".* FROM (SELECT "first_name" AS "firstName", "last_name" AS "lastName", "id" FROM "Users" AS "User" WHERE "User"."birth_date" >= '1990-01-01' AND ("User"."first_name" > 'Bernard' OR ("User"."first_name" = 'Bernard' AND ("User"."last_name" > 'LastName' OR ("User"."last_name" = 'LastName' AND "User"."id" > 4)))) ORDER BY "User"."first_name" ASC, "User"."last_name" ASC, "User"."id" ASC LIMIT 11) AS "User" ORDER BY "firstName" ASC, "lastName" ASC, "User"."id" ASC;"`;
 
-exports[`sequelizeFindByCursor supports filtering: query 2`] = `"Executing (default): SELECT "users".* FROM (SELECT "first_name" AS "firstName", "last_name" AS "lastName", "id" FROM "users" AS "users" WHERE ("users"."birth_date" >= '1990-01-01' AND ("users"."first_name" < 'Bernard' OR ("users"."first_name" = 'Bernard' AND ("users"."last_name" < 'LastName' OR ("users"."last_name" = 'LastName' AND "users"."id" < 4))))) ORDER BY "users"."first_name" DESC, "users"."last_name" DESC, "users"."id" DESC LIMIT 1) AS "users" ORDER BY "firstName" DESC, "lastName" DESC, "users"."id" DESC;"`;
+exports[`sequelizeFindByCursor supports filtering: query 2`] = `"Executing (default): SELECT "User".* FROM (SELECT "first_name" AS "firstName", "last_name" AS "lastName", "id" FROM "Users" AS "User" WHERE "User"."birth_date" >= '1990-01-01' AND ("User"."first_name" < 'Bernard' OR ("User"."first_name" = 'Bernard' AND ("User"."last_name" < 'LastName' OR ("User"."last_name" = 'LastName' AND "User"."id" < 4)))) ORDER BY "User"."first_name" DESC, "User"."last_name" DESC, "User"."id" DESC LIMIT 1) AS "User" ORDER BY "firstName" DESC, "lastName" DESC, "User"."id" DESC;"`;
 
 exports[`sequelizeFindByCursor supports returning the first x elements after another cursor: nodes 1`] = `
 [
