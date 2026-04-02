@@ -14,7 +14,6 @@ import {
   getUniqueColumns,
   matchAssociationReference,
 } from "./sequelize-utils";
-import type { MaybePromise } from "./types";
 
 /**
  * @module sequelize-find-by-cursor
@@ -85,9 +84,9 @@ export interface FindByCursorConfig<E extends Model> extends Context {
 export interface FindByCursorResult<T> {
   cursorKeys: string[];
 
-  hasNextPage(): MaybePromise<boolean>;
+  hasNextPage(): Promise<boolean>;
 
-  hasPreviousPage(): MaybePromise<boolean>;
+  hasPreviousPage(): Promise<boolean>;
 
   nodes: T[];
 }
@@ -175,8 +174,8 @@ export async function sequelizeFindByCursor<Entity extends Model>(
 
   return {
     nodes,
-    hasNextPage: () => hasNextPage(queryMetadata, hasMoreNodes),
-    hasPreviousPage: () => hasPreviousPage(queryMetadata, hasMoreNodes),
+    hasNextPage: async () => hasNextPage(queryMetadata, hasMoreNodes),
+    hasPreviousPage: async () => hasPreviousPage(queryMetadata, hasMoreNodes),
     cursorKeys: sortOrder.map((tuple) => tuple[0]),
   };
 }
@@ -218,7 +217,7 @@ function sortOrderHasField(order: OrderTuple[], field: string): boolean {
     a. If the server can efficiently determine that elements exist prior to after, return true.
   3. Return false.
 */
-function hasPreviousPage(
+async function hasPreviousPage(
   queryMetadata: QueryMetadata<Model>,
   hasMoreNodes: boolean,
 ) {
@@ -260,7 +259,7 @@ function hasPreviousPage(
     a. If the server can efficiently determine that elements exist following before, return true.
   3. Return false.
 */
-function hasNextPage(
+async function hasNextPage(
   queryMetadata: QueryMetadata<Model>,
   hasMoreNodes: boolean,
 ) {
