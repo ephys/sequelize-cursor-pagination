@@ -2,9 +2,9 @@ import type {
   ModelStatic,
   Model,
   NormalizedAttributeOptions,
-} from "@sequelize/core";
-import type { MakeNonNullish } from "@sequelize/utils";
-import { isString } from "@sequelize/utils";
+} from '@sequelize/core';
+import type { MakeNonNullish } from '@sequelize/utils';
+import { isString } from '@sequelize/utils';
 
 export function getPrimaryAttributes<E extends Model>(
   model: ModelStatic<E>,

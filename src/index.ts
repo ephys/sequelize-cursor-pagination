@@ -4,4 +4,4 @@ export {
   type FindByCursorResult,
   type ModelFinder,
   type OrderTuple,
-} from "./sequelize-find-by-cursor";
+} from './sequelize-find-by-cursor.js';

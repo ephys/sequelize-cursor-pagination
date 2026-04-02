@@ -7,13 +7,13 @@ import type {
   Transactionable,
   Projectable,
   Filterable,
-} from "@sequelize/core";
-import { Op, and, or } from "@sequelize/core";
+} from '@sequelize/core';
+import { Op, and, or } from '@sequelize/core';
 import {
   getPrimaryAttributes,
   getUniqueColumns,
   matchAssociationReference,
-} from "./sequelize-utils";
+} from './sequelize-utils.js';
 
 /**
  * @module sequelize-find-by-cursor
@@ -26,7 +26,7 @@ import {
 
 export type ModelFinder<E> = (query: FindOptions) => Promise<E[]>;
 
-export type OrderTuple = [string, "ASC" | "DESC"];
+export type OrderTuple = [string, 'ASC' | 'DESC'];
 
 type Cursor = { [key: string]: any };
 
@@ -161,7 +161,7 @@ export async function sequelizeFindByCursor<Entity extends Model>(
   if (!sortOrderIncludesUnique(sortOrder, uniques)) {
     for (const primaryKey of primaryKeys) {
       if (!sortOrderHasField(sortOrder, primaryKey)) {
-        sortOrder.push([primaryKey, "ASC"]);
+        sortOrder.push([primaryKey, 'ASC']);
       }
     }
   }
@@ -315,7 +315,7 @@ function reverseOrder(order: OrderTuple[]): OrderTuple[] {
   return order.map(
     ([column, direction]): OrderTuple => [
       column,
-      direction === "ASC" ? "DESC" : "ASC",
+      direction === 'ASC' ? 'DESC' : 'ASC',
     ],
   );
 }
@@ -421,7 +421,7 @@ function buildOrderQuery(
     // very last item: orderQuery = pk > after.pk
     const lastSortEntry = orderBy.at(-1);
     if (!lastSortEntry) {
-      throw new Error("orderBy cannot be empty");
+      throw new Error('orderBy cannot be empty');
     }
 
     const [sortColumn, orderDirection] = lastSortEntry;

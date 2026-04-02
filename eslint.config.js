@@ -1,14 +1,15 @@
-import { basePreset } from "@ephys/eslint-config-typescript";
+import { basePreset } from '@ephys/eslint-config-typescript';
 
 export default [
   {
-    ignores: ["**/__snapshots__/**"],
+    ignores: ['**/__snapshots__/**'],
   },
   ...basePreset(`${import.meta.dirname}/tsconfig.json`),
   {
     rules: {
-      "import/no-duplicates": "off",
-      "import/no-extraneous-dependencies": "off",
+      'import/no-duplicates': 'off',
+      'import/no-extraneous-dependencies': 'off',
+      'import/no-useless-path-segments': 'off',
     },
   },
 ];

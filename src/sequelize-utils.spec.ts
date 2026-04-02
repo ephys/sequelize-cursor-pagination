@@ -1,7 +1,7 @@
-import type { ModelStatic } from "@sequelize/core";
-import { DataTypes, Sequelize } from "@sequelize/core";
-import { TEST_databaseCredentials } from "./__test-utils__/sequelize";
-import { getPrimaryAttributes, getUniqueColumns } from "./sequelize-utils";
+import type { ModelStatic } from '@sequelize/core';
+import { DataTypes, Sequelize } from '@sequelize/core';
+import { TEST_databaseCredentials } from './__test-utils__/sequelize.js';
+import { getPrimaryAttributes, getUniqueColumns } from './sequelize-utils.js';
 
 let sequelize: Sequelize;
 let model: ModelStatic<any>;
@@ -11,7 +11,7 @@ beforeAll(async () => {
   sequelize = new Sequelize(TEST_databaseCredentials);
 
   model = sequelize.define(
-    "User",
+    'User',
     {
       id: {
         type: DataTypes.INTEGER,
@@ -30,26 +30,26 @@ beforeAll(async () => {
       },
       compositeUnique1: {
         type: DataTypes.STRING,
-        unique: "composite",
+        unique: 'composite',
         allowNull: false,
       },
       compositeUnique2: {
         type: DataTypes.STRING,
-        unique: "composite",
+        unique: 'composite',
         allowNull: false,
       },
     },
     {
       indexes: [
         {
-          type: "UNIQUE",
-          fields: ["optionsUnique"],
+          type: 'UNIQUE',
+          fields: ['optionsUnique'],
         },
       ],
     },
   );
 
-  compositePkModel = sequelize.define("CompositePkUser", {
+  compositePkModel = sequelize.define('CompositePkUser', {
     id1: {
       type: DataTypes.INTEGER,
       primaryKey: true,
@@ -65,26 +65,26 @@ beforeAll(async () => {
   });
 });
 
-describe("getUniqueColumns", () => {
-  it("returns all unique columns", () => {
+describe('getUniqueColumns', () => {
+  it('returns all unique columns', () => {
     const out = getUniqueColumns(model);
     // TODO: expect ['optionsUnique'] too
     expect(out.map((group) => group.map((col) => col.columnName))).toEqual([
-      ["optionsUnique"],
-      ["externalId"],
-      ["compositeUnique1", "compositeUnique2"],
+      ['optionsUnique'],
+      ['externalId'],
+      ['compositeUnique1', 'compositeUnique2'],
     ]);
   });
 });
 
-describe("getPrimaryColumns", () => {
-  it("returns all PK columns", () => {
+describe('getPrimaryColumns', () => {
+  it('returns all PK columns', () => {
     expect(getPrimaryAttributes(model).map((col) => col.columnName)).toEqual([
-      "id",
+      'id',
     ]);
     expect(
       getPrimaryAttributes(compositePkModel).map((col) => col.columnName),
-    ).toEqual(["id1", "id2"]);
+    ).toEqual(['id1', 'id2']);
   });
 });
 

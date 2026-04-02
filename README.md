@@ -24,8 +24,8 @@ const results: FindByCursorResult = await sequelizeFindByCursor({
   // you can also use 'last'
   first: 10,
   order: [
-    ["firstName", "ASC"],
-    ["lastName", "ASC"],
+    ['firstName', 'ASC'],
+    ['lastName', 'ASC'],
   ],
 });
 ```
@@ -67,7 +67,7 @@ You can use the `cursorKeys` field of the result to know exactly which fields ar
 const results = await sequelizeFindByCursor({
   model: UserModel,
   first: 10,
-  order: [["firstName", "ASC"]],
+  order: [['firstName', 'ASC']],
 });
 
 console.log(results.cursorKeys); // ["firstName", "id"] (note: include a unique column to avoid exposing the primary key if you don't want to expose it)
@@ -90,12 +90,12 @@ const results: FindByCursorResult = await sequelizeFindByCursor({
   // you can also use 'before' (you would typically use 'before' with 'last')
   after: {
     id: 6,
-    firstName: "Bernard",
-    lastName: "",
+    firstName: 'Bernard',
+    lastName: '',
   },
   order: [
-    ["firstName", "ASC"],
-    ["lastName", "ASC"],
+    ['firstName', 'ASC'],
+    ['lastName', 'ASC'],
   ],
 });
 ```
@@ -110,7 +110,7 @@ const results = await sequelizeFindByCursor({
   model: UserModel,
   first: 10,
   offset: 5,
-  order: [["firstName", "ASC"]],
+  order: [['firstName', 'ASC']],
 });
 
 // When offset > 0, hasPreviousPage() is always true (items were skipped at the start)
@@ -123,10 +123,10 @@ const results = await sequelizeFindByCursor({
   model: UserModel,
   first: 2,
   offset: 1,
-  after: { id: 3, firstName: "Cedric", lastName: "Anderson" },
+  after: { id: 3, firstName: 'Cedric', lastName: 'Anderson' },
   order: [
-    ["firstName", "ASC"],
-    ["lastName", "ASC"],
+    ['firstName', 'ASC'],
+    ['lastName', 'ASC'],
   ],
 });
 ```
@@ -142,9 +142,9 @@ The `getTotalCount()` method returns the total number of records that match the 
 const results = await sequelizeFindByCursor({
   model: UserModel,
   first: 10,
-  after: { id: 6, firstName: "Bernard", lastName: "" },
+  after: { id: 6, firstName: 'Bernard', lastName: '' },
   where: { isActive: true },
-  order: [["firstName", "ASC"]],
+  order: [['firstName', 'ASC']],
 });
 
 console.log(results.nodes.length); // up to 10 (cursor-filtered page)
@@ -173,8 +173,8 @@ const results: FindByCursorResult = await sequelizeFindByCursor({
   model: UserModel,
   first: 10,
   order: [
-    ["firstName", "ASC"],
-    ["lastName", "ASC"],
+    ['firstName', 'ASC'],
+    ['lastName', 'ASC'],
   ],
   findAll: (query) => {
     // customise `query` before passing it to findAll.

@@ -1,10 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "moduleResolution": "Node",
+    "moduleResolution": "nodenext",
     "outDir": "./lib",
+    "rootDir": "./src",
     "declaration": true,
-    "module": "CommonJS",
+    "module": "nodenext",
     "lib": ["ES2022"],
     "esModuleInterop": true,
     "types": ["jest", "node"]
