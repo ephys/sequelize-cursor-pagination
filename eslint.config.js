@@ -1,6 +1,9 @@
 import { basePreset } from "@ephys/eslint-config-typescript";
 
 export default [
+  {
+    ignores: ["**/__snapshots__/**"],
+  },
   ...basePreset(`${import.meta.dirname}/tsconfig.json`),
   {
     rules: {

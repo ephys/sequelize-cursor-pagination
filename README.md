@@ -36,12 +36,19 @@ This will return an object matching the following shape:
 type FindByCursorResult = {
   nodes: UserModel[];
 
+  // The sorted list of field names that must be present in the cursor object.
+  cursorKeys: string[];
+
   // these functions will sometimes return a Promise based on
   // whether or not the value can be determined without making a new Query.
   // In the above example, hasNextPage() will not return a promise because it already knows
   // whether or not there is more data to be selected. It does this by selecting one more item than needed.
-  hasNextPage: () => MaybePromise<boolean>;
-  hasPreviousPage: () => MaybePromise<boolean>;
+  hasNextPage: () => Promise<boolean>;
+  hasPreviousPage: () => Promise<boolean>;
+
+  // Returns the total number of records matching the base `where` filter,
+  // ignoring cursors and pagination. Lazily evaluated and cached after the first call.
+  getTotalCount: () => Promise<number>;
 };
 ```
 
@@ -53,6 +60,18 @@ These cursors are stateless and must be an object which includes the primary key
 
 In the following example, the sort order uses `firstName` and `lastName` and the table has `id` as the sole primary key. Therefore the
 cursor will be an object with the shape `{ firstName: string, lastName: string, id: number }`.
+
+You can use the `cursorKeys` field of the result to know exactly which fields are required in the cursor:
+
+```typescript
+const results = await sequelizeFindByCursor({
+  model: UserModel,
+  first: 10,
+  order: [["firstName", "ASC"]],
+});
+
+console.log(results.cursorKeys); // ["firstName", "id"] (note: include a unique column to avoid exposing the primary key if you don't want to expose it)
+```
 
 It is up to you to build the cursor and to determine how the cursor will be stored for the next query.  
 You could:
@@ -81,6 +100,57 @@ const results: FindByCursorResult = await sequelizeFindByCursor({
 });
 ```
 
+### Offset
+
+The `offset` option lets you skip a number of items from the start of the cursor-filtered result set (when using `first`) or from the end (when using `last`). It defaults to `0` and can be combined with `after` or `before`.
+
+```typescript
+// Skip the first 5 results, then return the next 10
+const results = await sequelizeFindByCursor({
+  model: UserModel,
+  first: 10,
+  offset: 5,
+  order: [["firstName", "ASC"]],
+});
+
+// When offset > 0, hasPreviousPage() is always true (items were skipped at the start)
+console.log(await results.hasPreviousPage()); // true
+```
+
+```typescript
+// Combined with a cursor: skip 1 item after the cursor, then return the next 2
+const results = await sequelizeFindByCursor({
+  model: UserModel,
+  first: 2,
+  offset: 1,
+  after: { id: 3, firstName: "Cedric", lastName: "Anderson" },
+  order: [
+    ["firstName", "ASC"],
+    ["lastName", "ASC"],
+  ],
+});
+```
+
+### Total Count
+
+The `getTotalCount()` method returns the total number of records that match the base `where` filter, **ignoring** any cursor (`after`/`before`) and pagination (`first`/`last`/`offset`). This is useful for building "Page 1 of N" style UIs.
+
+- It is **lazily evaluated** — no extra database query is made unless you call it.
+- The result is **cached** — calling it multiple times only runs one query.
+
+```typescript
+const results = await sequelizeFindByCursor({
+  model: UserModel,
+  first: 10,
+  after: { id: 6, firstName: "Bernard", lastName: "" },
+  where: { isActive: true },
+  order: [["firstName", "ASC"]],
+});
+
+console.log(results.nodes.length); // up to 10 (cursor-filtered page)
+console.log(await results.getTotalCount()); // total active users, regardless of cursor
+```
+
 ### Options
 
 `sequelizeFindByCursor` supports a series of standard sequelize options such as:
@@ -89,6 +159,7 @@ const results: FindByCursorResult = await sequelizeFindByCursor({
 - `logging`
 - `where`
 - `attributes`
+- `offset` — skip N items from the start (with `first`) or the end (with `last`) of the cursor-filtered set
 
 Check the typescript typings for more.
 

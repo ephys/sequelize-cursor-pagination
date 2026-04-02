@@ -85,15 +85,15 @@ export interface FindByCursorConfig<E extends Model> extends Context {
 export interface FindByCursorResult<T> {
   cursorKeys: string[];
 
-  hasNextPage(): Promise<boolean>;
-
-  hasPreviousPage(): Promise<boolean>;
-
   /**
    * Returns the total number of records matching the base filters (ignoring cursor and pagination).
    * The result is cached after the first call.
    */
   getTotalCount(): Promise<number>;
+
+  hasNextPage(): Promise<boolean>;
+
+  hasPreviousPage(): Promise<boolean>;
 
   nodes: T[];
 }
