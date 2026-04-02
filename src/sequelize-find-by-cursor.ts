@@ -8,7 +8,7 @@ import type {
   Projectable,
   Filterable,
 } from "@sequelize/core";
-import { Sequelize, Op, or, and } from "@sequelize/core";
+import { Op, and, or } from "@sequelize/core";
 import {
   getPrimaryAttributes,
   getUniqueColumns,
@@ -54,6 +54,7 @@ export interface FindByCursorConfig<E extends Model> extends Context {
    * The cursor is an object that must contain one value for each column used in the `order` property, plus the primary keys of the entity.
    */
   after?: { [key: string]: any } | null;
+
   /**
    * This is a cursor. If provided, only entities that are located before this cursor will be returned.
    *
@@ -87,6 +88,12 @@ export interface FindByCursorResult<T> {
   hasNextPage(): Promise<boolean>;
 
   hasPreviousPage(): Promise<boolean>;
+
+  /**
+   * Returns the total number of records matching the base filters (ignoring cursor and pagination).
+   * The result is cached after the first call.
+   */
+  getTotalCount(): Promise<number>;
 
   nodes: T[];
 }
@@ -172,10 +179,22 @@ export async function sequelizeFindByCursor<Entity extends Model>(
 
   const { nodes, hasMoreNodes } = await getPage<Entity>(queryMetadata);
 
+  let cachedTotalCount: number | null = null;
+  const getTotalCount = async (): Promise<number> => {
+    if (cachedTotalCount === null) {
+      // Exclude `attributes` (from Projectable) as it is not compatible with CountOptions
+      const { attributes: ignoreAttrs, ...countPassDown } = passDown;
+      cachedTotalCount = await model.count({ ...countPassDown });
+    }
+
+    return cachedTotalCount;
+  };
+
   return {
     nodes,
     hasNextPage: async () => hasNextPage(queryMetadata, hasMoreNodes),
     hasPreviousPage: async () => hasPreviousPage(queryMetadata, hasMoreNodes),
+    getTotalCount,
     cursorKeys: sortOrder.map((tuple) => tuple[0]),
   };
 }
@@ -358,7 +377,7 @@ async function getPage<Entity extends Model>(
   }
 
   if (wheres.length > 0) {
-    query.where = wheres.length === 1 ? wheres[0] : Sequelize.and(...wheres);
+    query.where = wheres.length === 1 ? wheres[0] : and(...wheres);
   }
 
   const currentPageResults: Entity[] = await findAll(query);

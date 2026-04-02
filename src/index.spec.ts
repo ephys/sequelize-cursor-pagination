@@ -556,6 +556,97 @@ describe("sequelizeFindByCursor", () => {
       }),
     ).rejects.toThrow(`'offset' must be a non-negative safe integer`);
   });
+
+  describe("getTotalCount", () => {
+    // Ordered set (by firstName ASC, lastName ASC, id ASC):
+    // Alan(5), Bernard(4), Cedric Anderson(3), Cedric Brown(2), Dimitri LastName(1), Dimitri LastName(6)
+    // Total = 6
+
+    it("returns the total count of all records when no filter is applied", async () => {
+      const results = await sequelizeFindByCursor({
+        model: userModel,
+        first: 2, // only fetches 2 nodes, but total should still be 6
+        order: [["firstName", "ASC"]],
+      });
+
+      expect(await results.getTotalCount()).toBe(6);
+    });
+
+    it("respects the where filter but ignores cursor constraints", async () => {
+      // birthDate >= 1990-01-01 matches: Alan(2000), Dimitri(1990), Dimitri(2010) → 3 records
+      const results = await sequelizeFindByCursor({
+        model: userModel,
+        first: 1, // only fetches 1 node
+        where: { birthDate: { [Op.gte]: "1990-01-01" } },
+        order: [["firstName", "ASC"]],
+      });
+
+      expect(await results.getTotalCount()).toBe(3);
+    });
+
+    it("ignores after cursor (counts entire matching set, not the cursor-filtered subset)", async () => {
+      // after: Cedric Anderson(3) normally filters to 3 records, but totalCount should still be 6
+      const results = await sequelizeFindByCursor({
+        model: userModel,
+        first: 10,
+        after: { id: 3, firstName: "Cedric", lastName: "Anderson" },
+        order: [
+          ["firstName", "ASC"],
+          ["lastName", "ASC"],
+        ],
+      });
+
+      expect(results.nodes).toHaveLength(3); // only 3 after the cursor
+      expect(await results.getTotalCount()).toBe(6); // but total is still 6
+    });
+
+    it("ignores before cursor (counts entire matching set, not the cursor-filtered subset)", async () => {
+      // before: Cedric Anderson(3) normally filters to 2 records, but totalCount should still be 6
+      const results = await sequelizeFindByCursor({
+        model: userModel,
+        first: 10,
+        before: { id: 3, firstName: "Cedric", lastName: "Anderson" },
+        order: [
+          ["firstName", "ASC"],
+          ["lastName", "ASC"],
+        ],
+      });
+
+      expect(results.nodes).toHaveLength(2); // only 2 before the cursor
+      expect(await results.getTotalCount()).toBe(6); // but total is still 6
+    });
+
+    it("is lazily evaluated — does not query the DB until called", async () => {
+      const countSpy = jest.spyOn(userModel, "count");
+
+      await sequelizeFindByCursor({
+        model: userModel,
+        first: 2,
+        order: [["firstName", "ASC"]],
+      });
+
+      expect(countSpy).not.toHaveBeenCalled();
+      countSpy.mockRestore();
+    });
+
+    it("caches the result — only queries the DB once across multiple calls", async () => {
+      const countSpy = jest.spyOn(userModel, "count");
+
+      const results = await sequelizeFindByCursor({
+        model: userModel,
+        first: 2,
+        order: [["firstName", "ASC"]],
+      });
+
+      const first = await results.getTotalCount();
+      const second = await results.getTotalCount();
+
+      expect(first).toBe(6);
+      expect(second).toBe(6);
+      expect(countSpy).toHaveBeenCalledTimes(1);
+      countSpy.mockRestore();
+    });
+  });
 });
 
 afterAll(async () => {

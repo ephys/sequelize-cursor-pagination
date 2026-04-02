@@ -3,7 +3,8 @@ import type {
   Model,
   NormalizedAttributeOptions,
 } from "@sequelize/core";
-import { isString, type NonNullish } from "@sequelize/utils";
+import type { MakeNonNullish } from "@sequelize/utils";
+import { isString } from "@sequelize/utils";
 
 export function getPrimaryAttributes<E extends Model>(
   model: ModelStatic<E>,
@@ -45,7 +46,7 @@ export function getUniqueColumns<E extends Model>(
     });
 
     const filteredAttributes = indexAttributes.filter(
-      (attr): attr is NonNullish<typeof attr> => attr !== undefined,
+      (attr): attr is MakeNonNullish<typeof attr> => attr !== undefined,
     ) as Array<NormalizedAttributeOptions<E>>;
 
     if (filteredAttributes.length !== indexAttributes.length) {
