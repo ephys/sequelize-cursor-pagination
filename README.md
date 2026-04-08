@@ -19,7 +19,7 @@ TypeScript typings are built-in.
 The simplest usage is to select the first `x` elements from the table in a given sort order.
 
 ```typescript
-const results: FindByCursorResult = await sequelizeFindByCursor({
+const results: FindByCursorResult = sequelizeFindByCursor({
   model: UserModel,
   // you can also use 'last'
   first: 10,
@@ -34,20 +34,18 @@ This will return an object matching the following shape:
 
 ```typescript
 type FindByCursorResult = {
-  nodes: UserModel[];
+  getNodes: () => Promise<UserModel[]>;
 
   // The sorted list of field names that must be present in the cursor object.
   cursorKeys: string[];
 
-  // these functions will sometimes return a Promise based on
-  // whether or not the value can be determined without making a new Query.
-  // In the above example, hasNextPage() will not return a promise because it already knows
-  // whether or not there is more data to be selected. It does this by selecting one more item than needed.
+  // Returns whether there are records after & before the current page, respectively.
+  // These methods are meant to be used at the same time as getNodes(),
+  // and share the same database query when possible.
   hasNextPage: () => Promise<boolean>;
   hasPreviousPage: () => Promise<boolean>;
 
   // Returns the total number of records matching the base `where` filter,
-  // ignoring cursors and pagination. Lazily evaluated and cached after the first call.
   getTotalCount: () => Promise<number>;
 };
 ```
@@ -64,7 +62,7 @@ cursor will be an object with the shape `{ firstName: string, lastName: string, 
 You can use the `cursorKeys` field of the result to know exactly which fields are required in the cursor:
 
 ```typescript
-const results = await sequelizeFindByCursor({
+const results = sequelizeFindByCursor({
   model: UserModel,
   first: 10,
   order: [['firstName', 'ASC']],
@@ -84,7 +82,7 @@ You could:
   (If the last user of a page changes their name from Bertrand to Zoe, your user will end up at the end of your list)
 
 ```typescript
-const results: FindByCursorResult = await sequelizeFindByCursor({
+const results: FindByCursorResult = sequelizeFindByCursor({
   model: UserModel,
   first: 10,
   // you can also use 'before' (you would typically use 'before' with 'last')
@@ -106,7 +104,7 @@ The `offset` option lets you skip a number of items from the start of the cursor
 
 ```typescript
 // Skip the first 5 results, then return the next 10
-const results = await sequelizeFindByCursor({
+const results = sequelizeFindByCursor({
   model: UserModel,
   first: 10,
   offset: 5,
@@ -119,7 +117,7 @@ console.log(await results.hasPreviousPage()); // true
 
 ```typescript
 // Combined with a cursor: skip 1 item after the cursor, then return the next 2
-const results = await sequelizeFindByCursor({
+const results = sequelizeFindByCursor({
   model: UserModel,
   first: 2,
   offset: 1,
@@ -135,11 +133,8 @@ const results = await sequelizeFindByCursor({
 
 The `getTotalCount()` method returns the total number of records that match the base `where` filter, **ignoring** any cursor (`after`/`before`) and pagination (`first`/`last`/`offset`). This is useful for building "Page 1 of N" style UIs.
 
-- It is **lazily evaluated** — no extra database query is made unless you call it.
-- The result is **cached** — calling it multiple times only runs one query.
-
 ```typescript
-const results = await sequelizeFindByCursor({
+const results = sequelizeFindByCursor({
   model: UserModel,
   first: 10,
   after: { id: 6, firstName: 'Bernard', lastName: '' },
@@ -147,7 +142,7 @@ const results = await sequelizeFindByCursor({
   order: [['firstName', 'ASC']],
 });
 
-console.log(results.nodes.length); // up to 10 (cursor-filtered page)
+console.log((await results.getNodes()).length); // up to 10 (cursor-filtered page)
 console.log(await results.getTotalCount()); // total active users, regardless of cursor
 ```
 
@@ -169,7 +164,7 @@ If the available options are not enough, you can use the escape hatch to build t
 It should be used as a last resort.
 
 ```typescript
-const results: FindByCursorResult = await sequelizeFindByCursor({
+const results: FindByCursorResult = sequelizeFindByCursor({
   model: UserModel,
   first: 10,
   order: [
