@@ -63,7 +63,7 @@ export interface FindByCursorConfig<E extends Model> extends Context {
   before?: { [key: string]: any } | null;
 
   /**
-   * Use this to customise the query for your own needs if the provided options are not sufficient.
+   * Use this to customize the query for your own needs if the provided options are not sufficient.
    * This option should be used as a last resort.
    */
   findAll?: ModelFinder<E>;
@@ -86,6 +86,13 @@ export interface FindByCursorResult<T> {
   cursorKeys: readonly string[];
 
   /**
+   * Returns the nodes for the current page.
+   * The result is lazily fetched and cached after the first call.
+   * Calling nodes(), hasNextPage(), and hasPreviousPage() in parallel will only trigger one DB query.
+   */
+  getNodes(): Promise<readonly T[]>;
+
+  /**
    * Returns the total number of records matching the base filters (ignoring cursor and pagination).
    * The result is cached after the first call.
    */
@@ -94,13 +101,11 @@ export interface FindByCursorResult<T> {
   hasNextPage(): Promise<boolean>;
 
   hasPreviousPage(): Promise<boolean>;
-
-  nodes: readonly T[];
 }
 
-export async function sequelizeFindByCursor<Entity extends Model>(
+export function sequelizeFindByCursor<Entity extends Model>(
   config: FindByCursorConfig<Entity>,
-): Promise<FindByCursorResult<Entity>> {
+): FindByCursorResult<Entity> {
   const {
     model,
     order,
@@ -177,7 +182,19 @@ export async function sequelizeFindByCursor<Entity extends Model>(
     passDown,
   };
 
-  const { nodes, hasMoreNodes } = await getPage<Entity>(queryMetadata);
+  // Lazily fetch the page and cache the promise so parallel calls (nodes, hasNextPage,
+  // hasPreviousPage) share a single DB query.
+  let cachedPagePromise: Promise<{
+    hasMoreNodes: boolean;
+    nodes: Entity[];
+  }> | null = null;
+  const getPageCached = async () => {
+    if (cachedPagePromise === null) {
+      cachedPagePromise = getPage<Entity>(queryMetadata);
+    }
+
+    return cachedPagePromise;
+  };
 
   let cachedTotalCount: number | null = null;
   const getTotalCount = async (): Promise<number> => {
@@ -191,9 +208,15 @@ export async function sequelizeFindByCursor<Entity extends Model>(
   };
 
   return {
-    nodes,
-    hasNextPage: async () => hasNextPage(queryMetadata, hasMoreNodes),
-    hasPreviousPage: async () => hasPreviousPage(queryMetadata, hasMoreNodes),
+    getNodes: async () => getPageCached().then(({ nodes }) => nodes),
+    hasNextPage: async () =>
+      getPageCached().then(async ({ hasMoreNodes }) =>
+        hasNextPage(queryMetadata, hasMoreNodes),
+      ),
+    hasPreviousPage: async () =>
+      getPageCached().then(async ({ hasMoreNodes }) =>
+        hasPreviousPage(queryMetadata, hasMoreNodes),
+      ),
     getTotalCount,
     cursorKeys: sortOrder.map((tuple) => tuple[0]),
   };
