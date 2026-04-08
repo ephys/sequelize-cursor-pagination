@@ -607,6 +607,109 @@ describe('sequelizeFindByCursor', () => {
     assert.strictEqual(findAllCallCount, 1);
   });
 
+  it('nodes/hasNextPage/hasPreviousPage: using last — getNodes and hasPreviousPage share one query; hasNextPage resolves without a query', async () => {
+    // With `last`, isLast=true:
+    //   getNodes()        → #getPageDeduped (shared)
+    //   hasPreviousPage() → #getPageDeduped (shared)
+    //   hasNextPage()     → isLast=true, offset=0, no `before` cursor → returns false immediately
+    let findAllCallCount = 0;
+    const results = sequelizeFindByCursor({
+      model: userModel,
+      last: 2,
+      order: [['firstName', 'ASC']],
+      findAll: async (query) => {
+        findAllCallCount++;
+
+        return userModel.findAll(query);
+      },
+    });
+
+    await Promise.all([
+      results.getNodes(),
+      results.hasNextPage(),
+      results.hasPreviousPage(),
+    ]);
+    assert.strictEqual(findAllCallCount, 1);
+  });
+
+  it('nodes/hasNextPage/hasPreviousPage: using first+after — getNodes and hasNextPage share one query; hasPreviousPage makes a separate backwards query', async () => {
+    // With `first` + `after`, isLast=false:
+    //   getNodes()        → #getPageDeduped (shared)
+    //   hasNextPage()     → #getPageDeduped (shared)
+    //   hasPreviousPage() → after is set → separate getPage call with reversed cursor
+    let findAllCallCount = 0;
+    const results = sequelizeFindByCursor({
+      model: userModel,
+      first: 2,
+      after: { id: 3, firstName: 'Cedric', lastName: 'Anderson' },
+      order: [
+        ['firstName', 'ASC'],
+        ['lastName', 'ASC'],
+      ],
+      findAll: async (query) => {
+        findAllCallCount++;
+
+        return userModel.findAll(query);
+      },
+    });
+
+    await Promise.all([
+      results.getNodes(),
+      results.hasNextPage(),
+      results.hasPreviousPage(),
+    ]);
+    assert.strictEqual(findAllCallCount, 2);
+  });
+
+  it('nodes/hasNextPage/hasPreviousPage: using last+before — getNodes and hasPreviousPage share one query; hasNextPage makes a separate forwards query', async () => {
+    // With `last` + `before`, isLast=true:
+    //   getNodes()        → #getPageDeduped (shared)
+    //   hasPreviousPage() → #getPageDeduped (shared)
+    //   hasNextPage()     → before is set → separate getPage call with reversed cursor
+    let findAllCallCount = 0;
+    const results = sequelizeFindByCursor({
+      model: userModel,
+      last: 2,
+      before: { id: 1, firstName: 'Dimitri', lastName: 'LastName' },
+      order: [
+        ['firstName', 'ASC'],
+        ['lastName', 'ASC'],
+      ],
+      findAll: async (query) => {
+        findAllCallCount++;
+
+        return userModel.findAll(query);
+      },
+    });
+
+    await Promise.all([
+      results.getNodes(),
+      results.hasNextPage(),
+      results.hasPreviousPage(),
+    ]);
+    assert.strictEqual(findAllCallCount, 2);
+  });
+
+  it('nodes/hasNextPage/hasPreviousPage: sequential calls each trigger their own query (deduplication does not persist across calls)', async () => {
+    // Deduplication only coalesces calls made before the first query settles.
+    // Once the promise resolves, subsequent calls start a fresh query.
+    let findAllCallCount = 0;
+    const results = sequelizeFindByCursor({
+      model: userModel,
+      first: 2,
+      order: [['firstName', 'ASC']],
+      findAll: async (query) => {
+        findAllCallCount++;
+
+        return userModel.findAll(query);
+      },
+    });
+
+    await results.getNodes(); // query 1
+    await results.hasNextPage(); // query 2 (dedup promise already settled and cleared)
+    assert.strictEqual(findAllCallCount, 2);
+  });
+
   describe('getTotalCount', () => {
     // Ordered set (by firstName ASC, lastName ASC, id ASC):
     // Alan(5), Bernard(4), Cedric Anderson(3), Cedric Brown(2), Dimitri LastName(1), Dimitri LastName(6)
@@ -676,23 +779,6 @@ describe('sequelizeFindByCursor', () => {
       });
 
       assert.strictEqual(countSpy.mock.calls.length, 0);
-    });
-
-    it('caches the result — only queries the DB once across multiple calls', async (t) => {
-      const countSpy = t.mock.method(userModel, 'count');
-
-      const results = sequelizeFindByCursor({
-        model: userModel,
-        first: 2,
-        order: [['firstName', 'ASC']],
-      });
-
-      const first = await results.getTotalCount();
-      const second = await results.getTotalCount();
-
-      assert.strictEqual(first, 6);
-      assert.strictEqual(second, 6);
-      assert.strictEqual(countSpy.mock.calls.length, 1);
     });
   });
 });

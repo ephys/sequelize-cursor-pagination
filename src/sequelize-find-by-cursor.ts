@@ -30,7 +30,9 @@ export type OrderTuple = [string, 'ASC' | 'DESC'];
 
 type Cursor = { [key: string]: any };
 
-interface Context extends Logging, Transactionable, Projectable, Filterable {}
+// Options passed from sequelizeFindByCursor config down to individual queries.
+// Transactionable is intentionally excluded — transactions are specified per-method call.
+interface Context extends Logging, Projectable, Filterable {}
 
 interface QueryMetadata<Entity extends Model> {
   after: Cursor | null;
@@ -40,6 +42,7 @@ interface QueryMetadata<Entity extends Model> {
 
   isLast: boolean;
   limit: number;
+  model: ModelStatic<Entity>;
   offset: number;
 
   passDown: Context;
@@ -82,25 +85,176 @@ export interface FindByCursorConfig<E extends Model> extends Context {
   order: readonly OrderTuple[];
 }
 
-export interface FindByCursorResult<T> {
-  cursorKeys: readonly string[];
+export class FindByCursorResult<T extends Model> {
+  readonly cursorKeys: readonly string[];
+  readonly #queryMetadata: QueryMetadata<T>;
+
+  #pendingPagePromise: Promise<{ hasMoreNodes: boolean; nodes: T[] }> | null =
+    null;
+
+  constructor(queryMetadata: QueryMetadata<T>, cursorKeys: readonly string[]) {
+    this.cursorKeys = cursorKeys;
+    this.#queryMetadata = queryMetadata;
+  }
+
+  /**
+   * Gets the current page of results, using a cached promise to dedupe multiple simultaneous calls.
+   */
+  async #getPageDeduped(options: Transactionable | undefined) {
+    if (this.#pendingPagePromise === null) {
+      this.#pendingPagePromise = Promise.resolve()
+        .then(async () => getPage(this.#queryMetadata, options))
+        .finally(() => {
+          this.#pendingPagePromise = null;
+        });
+    }
+
+    return this.#pendingPagePromise;
+  }
 
   /**
    * Returns the nodes for the current page.
-   * The result is lazily fetched and cached after the first call.
-   * Calling nodes(), hasNextPage(), and hasPreviousPage() in parallel will only trigger one DB query.
+   * Loads one additional node beyond the requested limit to determine whether there is a next/previous page (see {@link hasNextPage} and {@link hasPreviousPage}),
+   * but that extra node is not included in the returned results.
+   *
+   * Simultaneous calls to this method are deduplicated, to allow getting the nodes and page info at the same time without unnecessary duplicate queries.
+   *
+   * @param options.transaction - Transaction to use for this query.
+   *   Note: only the first call's transaction is used; subsequent calls return the cached result.
    */
-  getNodes(): Promise<readonly T[]>;
+  async getNodes(options?: Transactionable): Promise<readonly T[]> {
+    return this.#getPageDeduped(options).then(({ nodes }) => nodes);
+  }
 
   /**
-   * Returns the total number of records matching the base filters (ignoring cursor and pagination).
-   * The result is cached after the first call.
+   * Returns whether there is a next page.
+   *
+   * In the forward direction (when `first` is used), this is determined by loading the nodes ({@link getNodes})
+   * and checking whether the extra node loaded beyond the requested limit exists.
+   * When called at the same time as `getNodes`, the node fetching is deduplicated to avoid unnecessary duplicate queries.
+   *
+   * In the backward direction (when `last` is used), this is determined by loading one node in the opposite direction,
+   * and checking whether it exists. This is a different query from ({@link getNodes}), and is therefore not deduplicated with it.
+   *
+   * @param options.transaction - Transaction to use for this query.
+   *   Note: only the first call's transaction is used for the main page query;
+   *   subsequent calls return the cached result.
    */
-  getTotalCount(): Promise<number>;
+  async hasNextPage(options?: Transactionable): Promise<boolean> {
+    /*
+      GraphQL cursor spec:
+      hasNextPage is used to indicate whether more edges exist following the set defined by the clients arguments.
 
-  hasNextPage(): Promise<boolean>;
+      1. If first is set:
+        a. Let edges be the result of calling ApplyCursorsToEdges(allEdges, before, after).
+        b. If edges contains more than first elements return true, otherwise false.
+      2. If before is set:
+        a. If the server can efficiently determine that elements exist following before, return true.
+      3. Return false.
+    */
 
-  hasPreviousPage(): Promise<boolean>;
+    if (!this.#queryMetadata.isLast) {
+      return (await this.#getPageDeduped(options)).hasMoreNodes;
+    }
+
+    // Items were skipped at the end of the cursor-filtered set
+    if (this.#queryMetadata.offset > 0) {
+      return true;
+    }
+
+    if (this.#queryMetadata.before) {
+      return getPage(
+        {
+          ...this.#queryMetadata,
+          after: this.#queryMetadata.before,
+          isLast: false,
+
+          sortOrder: this.#queryMetadata.sortOrder,
+          before: null,
+
+          // we take 0 items because getPage will by default take 1 more
+          // for hasMoreNodes
+          limit: 0,
+        },
+        options,
+      ).then((results) => {
+        return results.hasMoreNodes;
+      });
+    }
+
+    return false;
+  }
+
+  /**
+   * Returns whether there is a previous page.
+   *
+   * In the forward direction (when `first` is used), this is determined by loading one node in the opposite direction,
+   * and checking whether it exists. This is a different query from ({@link getNodes}), and is therefore not deduplicated with it.
+   *
+   * In the backward direction (when `last` is used), this is determined by loading the nodes ({@link getNodes})
+   * and checking whether the extra node loaded beyond the requested limit exists.
+   * When called at the same time as `getNodes`, the node fetching is deduplicated to avoid unnecessary duplicate queries.
+   *
+   * @param options.transaction - Transaction to use for this query.
+   *   Note: only the first call's transaction is used for the main page query;
+   *   subsequent calls return the cached result.
+   */
+  async hasPreviousPage(options?: Transactionable): Promise<boolean> {
+    /*
+      GraphQL cursor spec:
+      hasPreviousPage is used to indicate whether more edges exist prior to the set defined by the clients arguments.
+
+      1. If last is set:
+        a. Let edges be the result of calling ApplyCursorsToEdges(allEdges, before, after).
+        b. If edges contains more than last elements return true, otherwise false.
+      2. If after is set:
+        a. If the server can efficiently determine that elements exist prior to after, return true.
+      3. Return false.
+    */
+
+    if (this.#queryMetadata.isLast) {
+      return (await this.#getPageDeduped(options)).hasMoreNodes;
+    }
+
+    // Items were skipped at the start of the cursor-filtered set
+    if (this.#queryMetadata.offset > 0) {
+      return true;
+    }
+
+    if (this.#queryMetadata.after) {
+      return getPage(
+        {
+          ...this.#queryMetadata,
+
+          before: this.#queryMetadata.after,
+          isLast: true,
+
+          sortOrder: this.#queryMetadata.sortOrder,
+          after: null,
+
+          // we take 0 items because getPage will by default take 1 more
+          // for hasMoreNodes
+          limit: 0,
+        },
+        options,
+      ).then((results) => results.hasMoreNodes);
+    }
+
+    return false;
+  }
+
+  /**
+   * Returns the total number of records matching the base filters (ignoring pagination).
+   *
+   * @param options.transaction - Transaction to use for this query.
+   */
+  async getTotalCount(options?: Transactionable): Promise<number> {
+    return this.#queryMetadata.model.count({
+      ...this.#queryMetadata.passDown,
+      ...options,
+      attributes: undefined,
+    });
+  }
 }
 
 export function sequelizeFindByCursor<Entity extends Model>(
@@ -123,7 +277,6 @@ export function sequelizeFindByCursor<Entity extends Model>(
   }
 
   if (after && before) {
-    // TODO
     throw new Error(
       `Having both 'before' and 'after' is not currently supported. PR welcome.`,
     );
@@ -174,6 +327,7 @@ export function sequelizeFindByCursor<Entity extends Model>(
   const queryMetadata: QueryMetadata<Entity> = {
     isLast: last != null,
     limit,
+    model,
     offset: resolvedOffset,
     sortOrder,
     after: after ?? null,
@@ -182,44 +336,10 @@ export function sequelizeFindByCursor<Entity extends Model>(
     passDown,
   };
 
-  // Lazily fetch the page and cache the promise so parallel calls (nodes, hasNextPage,
-  // hasPreviousPage) share a single DB query.
-  let cachedPagePromise: Promise<{
-    hasMoreNodes: boolean;
-    nodes: Entity[];
-  }> | null = null;
-  const getPageCached = async () => {
-    if (cachedPagePromise === null) {
-      cachedPagePromise = getPage<Entity>(queryMetadata);
-    }
-
-    return cachedPagePromise;
-  };
-
-  let cachedTotalCount: number | null = null;
-  const getTotalCount = async (): Promise<number> => {
-    if (cachedTotalCount === null) {
-      // Exclude `attributes` (from Projectable) as it is not compatible with CountOptions
-      const { attributes: ignoreAttrs, ...countPassDown } = passDown;
-      cachedTotalCount = await model.count({ ...countPassDown });
-    }
-
-    return cachedTotalCount;
-  };
-
-  return {
-    getNodes: async () => getPageCached().then(({ nodes }) => nodes),
-    hasNextPage: async () =>
-      getPageCached().then(async ({ hasMoreNodes }) =>
-        hasNextPage(queryMetadata, hasMoreNodes),
-      ),
-    hasPreviousPage: async () =>
-      getPageCached().then(async ({ hasMoreNodes }) =>
-        hasPreviousPage(queryMetadata, hasMoreNodes),
-      ),
-    getTotalCount,
-    cursorKeys: sortOrder.map((tuple) => tuple[0]),
-  };
+  return new FindByCursorResult(
+    queryMetadata,
+    sortOrder.map((tuple) => tuple[0]),
+  );
 }
 
 function sortOrderIncludesUnique(
@@ -249,91 +369,6 @@ function sortOrderHasField(order: OrderTuple[], field: string): boolean {
   return order.some((tuple) => tuple[0] === field);
 }
 
-/*
-  hasPreviousPage is used to indicate whether more edges exist prior to the set defined by the clients arguments.
-
-  1. If last is set:
-    a. Let edges be the result of calling ApplyCursorsToEdges(allEdges, before, after).
-    b. If edges contains more than last elements return true, otherwise false.
-  2. If after is set:
-    a. If the server can efficiently determine that elements exist prior to after, return true.
-  3. Return false.
-*/
-async function hasPreviousPage(
-  queryMetadata: QueryMetadata<Model>,
-  hasMoreNodes: boolean,
-) {
-  if (queryMetadata.isLast) {
-    return hasMoreNodes;
-  }
-
-  // Items were skipped at the start of the cursor-filtered set
-  if (queryMetadata.offset > 0) {
-    return true;
-  }
-
-  if (queryMetadata.after) {
-    return getPage({
-      ...queryMetadata,
-
-      before: queryMetadata.after,
-      isLast: true,
-
-      sortOrder: queryMetadata.sortOrder,
-      after: null,
-
-      // we take 0 items because getPage will by default take 1 more
-      // for hasMoreNodes
-      limit: 0,
-    }).then((results) => results.hasMoreNodes);
-  }
-
-  return false;
-}
-
-/*
-  hasNextPage is used to indicate whether more edges exist following the set defined by the clients arguments.
-
-  1. If first is set:
-    a. Let edges be the result of calling ApplyCursorsToEdges(allEdges, before, after).
-    b. If edges contains more than first elements return true, otherwise false.
-  2. If before is set:
-    a. If the server can efficiently determine that elements exist following before, return true.
-  3. Return false.
-*/
-async function hasNextPage(
-  queryMetadata: QueryMetadata<Model>,
-  hasMoreNodes: boolean,
-) {
-  if (!queryMetadata.isLast) {
-    return hasMoreNodes;
-  }
-
-  // Items were skipped at the end of the cursor-filtered set
-  if (queryMetadata.offset > 0) {
-    return true;
-  }
-
-  if (queryMetadata.before) {
-    return getPage({
-      ...queryMetadata,
-      after: queryMetadata.before,
-      isLast: false,
-
-      sortOrder: queryMetadata.sortOrder,
-      before: null,
-
-      // we take 0 items because getPage will by default take 1 more
-      // for hasMoreNodes
-      limit: 0,
-    }).then((results) => {
-      return results.hasMoreNodes;
-    });
-  }
-
-  return false;
-}
-
 function reverseOrder(order: readonly OrderTuple[]): readonly OrderTuple[] {
   return order.map(
     ([column, direction]): OrderTuple => [
@@ -350,6 +385,7 @@ enum CursorType {
 
 async function getPage<Entity extends Model>(
   queryMetadata: QueryMetadata<Entity>,
+  options: Transactionable | undefined,
 ): Promise<{ hasMoreNodes: boolean; nodes: Entity[] }> {
   const { sortOrder, after, before, isLast, findAll, passDown } = queryMetadata;
 
@@ -357,7 +393,8 @@ async function getPage<Entity extends Model>(
     isLast ? reverseOrder(sortOrder) : sortOrder,
   );
   const query: FindOptions = {
-    ...passDown, // Transactionable & Logging
+    ...passDown, // Logging & Projectable & Filterable
+    ...options, // Transactionable
     // get one more result than needed to check if there are still results after this page
     limit: queryMetadata.limit + 1,
     offset: queryMetadata.offset,
