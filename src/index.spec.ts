@@ -4,15 +4,15 @@ import { DataTypes, Op, Sequelize } from '@sequelize/core';
 import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
 import { TEST_databaseCredentials } from './__test-utils__/sequelize.js';
-import { sequelizeFindByCursor } from './index.js';
+import { SequelizePage } from './index.js';
 
 let sequelize: Sequelize;
-let userModel: ModelStatic<any>;
+let UserModel: ModelStatic<any>;
 
 before(async () => {
   sequelize = new Sequelize(TEST_databaseCredentials);
 
-  userModel = sequelize.define('User', {
+  UserModel = sequelize.define('User', {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
@@ -56,7 +56,7 @@ before(async () => {
     force: true,
   });
 
-  await userModel.bulkCreate([
+  await UserModel.bulkCreate([
     {
       id: 5,
       externalId: 'A',
@@ -114,11 +114,11 @@ before(async () => {
   ]);
 });
 
-describe('sequelizeFindByCursor', () => {
+describe('SequelizePage', () => {
   it('includes PK in ORDER BY to ensures constant order', async (t) => {
-    const results = sequelizeFindByCursor({
+    const page = new SequelizePage({
       attributes: ['firstName', 'lastName', 'id'],
-      model: userModel,
+      model: UserModel,
       first: 10,
       order: [
         ['firstName', 'ASC'],
@@ -131,15 +131,15 @@ describe('sequelizeFindByCursor', () => {
 
     // "Dimitri LastName" (1) should be before "Dimitri LastName" (6)
 
-    t.assert.snapshot(await results.getNodes());
-    assert.strictEqual(await results.hasNextPage(), false);
-    assert.strictEqual(await results.hasPreviousPage(), false);
+    t.assert.snapshot(await page.getNodes());
+    assert.strictEqual(await page.hasNextPage(), false);
+    assert.strictEqual(await page.hasPreviousPage(), false);
   });
 
   it("does not include extra PK in ORDER BY if it's already present", async (t) => {
-    const results = sequelizeFindByCursor({
+    const page = new SequelizePage({
       attributes: ['firstName', 'lastName', 'id'],
-      model: userModel,
+      model: UserModel,
       first: 10,
       order: [
         ['firstName', 'ASC'],
@@ -153,15 +153,15 @@ describe('sequelizeFindByCursor', () => {
 
     // "Dimitri LastName" (6) should be before "Dimitri LastName" (1)
 
-    t.assert.snapshot(await results.getNodes());
-    assert.strictEqual(await results.hasNextPage(), false);
-    assert.strictEqual(await results.hasPreviousPage(), false);
+    t.assert.snapshot(await page.getNodes());
+    assert.strictEqual(await page.hasNextPage(), false);
+    assert.strictEqual(await page.hasPreviousPage(), false);
   });
 
   it('supports returning the first x elements of the set', async (t) => {
-    const results = sequelizeFindByCursor({
+    const page = new SequelizePage({
       attributes: ['firstName', 'lastName', 'id'],
-      model: userModel,
+      model: UserModel,
       first: 2,
       order: [
         ['firstName', 'ASC'],
@@ -169,15 +169,15 @@ describe('sequelizeFindByCursor', () => {
       ],
     });
 
-    t.assert.snapshot(await results.getNodes());
-    assert.strictEqual(await results.hasNextPage(), true);
-    assert.strictEqual(await results.hasPreviousPage(), false);
+    t.assert.snapshot(await page.getNodes());
+    assert.strictEqual(await page.hasNextPage(), true);
+    assert.strictEqual(await page.hasPreviousPage(), false);
   });
 
   it('supports returning the last x elements of the set', async (t) => {
-    const results = sequelizeFindByCursor({
+    const page = new SequelizePage({
       attributes: ['firstName', 'lastName', 'id'],
-      model: userModel,
+      model: UserModel,
       last: 2,
       order: [
         ['firstName', 'ASC'],
@@ -185,15 +185,15 @@ describe('sequelizeFindByCursor', () => {
       ],
     });
 
-    t.assert.snapshot(await results.getNodes());
-    assert.strictEqual(await results.hasNextPage(), false);
-    assert.strictEqual(await results.hasPreviousPage(), true);
+    t.assert.snapshot(await page.getNodes());
+    assert.strictEqual(await page.hasNextPage(), false);
+    assert.strictEqual(await page.hasPreviousPage(), true);
   });
 
   it('supports returning the first x elements after another cursor', async (t) => {
-    const results = sequelizeFindByCursor({
+    const page = new SequelizePage({
       attributes: ['firstName', 'lastName', 'id'],
-      model: userModel,
+      model: UserModel,
       first: 2,
       after: {
         id: 3,
@@ -206,15 +206,15 @@ describe('sequelizeFindByCursor', () => {
       ],
     });
 
-    t.assert.snapshot(await results.getNodes());
-    assert.strictEqual(await results.hasNextPage(), true);
-    assert.strictEqual(await results.hasPreviousPage(), true);
+    t.assert.snapshot(await page.getNodes());
+    assert.strictEqual(await page.hasNextPage(), true);
+    assert.strictEqual(await page.hasPreviousPage(), true);
   });
 
   it('supports returning the last x elements after another cursor', async (t) => {
-    const results = sequelizeFindByCursor({
+    const page = new SequelizePage({
       attributes: ['firstName', 'lastName', 'id'],
-      model: userModel,
+      model: UserModel,
       last: 2,
       after: {
         id: 3,
@@ -227,15 +227,15 @@ describe('sequelizeFindByCursor', () => {
       ],
     });
 
-    t.assert.snapshot(await results.getNodes());
-    assert.strictEqual(await results.hasNextPage(), false);
-    assert.strictEqual(await results.hasPreviousPage(), true);
+    t.assert.snapshot(await page.getNodes());
+    assert.strictEqual(await page.hasNextPage(), false);
+    assert.strictEqual(await page.hasPreviousPage(), true);
   });
 
   it('supports returning the first x elements before another cursor', async (t) => {
-    const results = sequelizeFindByCursor({
+    const page = new SequelizePage({
       attributes: ['firstName', 'lastName', 'id'],
-      model: userModel,
+      model: UserModel,
       first: 2,
       before: {
         id: 3,
@@ -248,15 +248,15 @@ describe('sequelizeFindByCursor', () => {
       ],
     });
 
-    t.assert.snapshot(await results.getNodes());
-    assert.strictEqual(await results.hasNextPage(), false);
-    assert.strictEqual(await results.hasPreviousPage(), false);
+    t.assert.snapshot(await page.getNodes());
+    assert.strictEqual(await page.hasNextPage(), false);
+    assert.strictEqual(await page.hasPreviousPage(), false);
   });
 
   it('supports returning the last x elements before another cursor', async (t) => {
-    const results = sequelizeFindByCursor({
+    const page = new SequelizePage({
       attributes: ['firstName', 'lastName', 'id'],
-      model: userModel,
+      model: UserModel,
       last: 2,
       before: {
         id: 1,
@@ -269,15 +269,15 @@ describe('sequelizeFindByCursor', () => {
       ],
     });
 
-    t.assert.snapshot(await results.getNodes());
-    assert.strictEqual(await results.hasNextPage(), true);
-    assert.strictEqual(await results.hasPreviousPage(), true);
+    t.assert.snapshot(await page.getNodes());
+    assert.strictEqual(await page.hasNextPage(), true);
+    assert.strictEqual(await page.hasPreviousPage(), true);
   });
 
   it('supports filtering', async (t) => {
-    const results = sequelizeFindByCursor({
+    const page = new SequelizePage({
       attributes: ['firstName', 'lastName', 'id'],
-      model: userModel,
+      model: UserModel,
       first: 10,
       after: {
         id: 4,
@@ -297,26 +297,26 @@ describe('sequelizeFindByCursor', () => {
       },
     });
 
-    t.assert.snapshot(await results.getNodes());
-    assert.strictEqual(await results.hasNextPage(), false);
-    assert.strictEqual(await results.hasPreviousPage(), true);
+    t.assert.snapshot(await page.getNodes());
+    assert.strictEqual(await page.hasNextPage(), false);
+    assert.strictEqual(await page.hasPreviousPage(), true);
   });
 
   it('returns the keys used for the cursor (no unique specified: adds PK)', async () => {
-    const results = sequelizeFindByCursor({
+    const page = new SequelizePage({
       attributes: ['firstName', 'id'],
-      model: userModel,
+      model: UserModel,
       first: 10,
       order: [['firstName', 'ASC']],
     });
 
-    assert.deepStrictEqual(results.cursorKeys, ['firstName', 'id']);
+    assert.deepStrictEqual(page.cursorKeys, ['firstName', 'id']);
   });
 
   it('returns the keys used for the cursor (Unique specified)', async () => {
-    const results = sequelizeFindByCursor({
+    const page = new SequelizePage({
       attributes: ['firstName', 'externalId'],
-      model: userModel,
+      model: UserModel,
       first: 10,
       order: [
         ['firstName', 'ASC'],
@@ -324,13 +324,13 @@ describe('sequelizeFindByCursor', () => {
       ],
     });
 
-    assert.deepStrictEqual(results.cursorKeys, ['firstName', 'externalId']);
+    assert.deepStrictEqual(page.cursorKeys, ['firstName', 'externalId']);
   });
 
   it('returns the keys used for the cursor (Composite unique partly specified: adds PK)', async () => {
-    const results = sequelizeFindByCursor({
+    const page = new SequelizePage({
       attributes: ['firstName', 'compositeUnique1'],
-      model: userModel,
+      model: UserModel,
       first: 10,
       order: [
         ['firstName', 'ASC'],
@@ -338,7 +338,7 @@ describe('sequelizeFindByCursor', () => {
       ],
     });
 
-    assert.deepStrictEqual(results.cursorKeys, [
+    assert.deepStrictEqual(page.cursorKeys, [
       'firstName',
       'compositeUnique1',
       'id',
@@ -346,9 +346,9 @@ describe('sequelizeFindByCursor', () => {
   });
 
   it('returns the keys used for the cursor (Composite unique fully specified)', async () => {
-    const results = sequelizeFindByCursor({
+    const page = new SequelizePage({
       attributes: ['firstName', 'compositeUnique1', 'compositeUnique2'],
-      model: userModel,
+      model: UserModel,
       first: 10,
       order: [
         ['firstName', 'ASC'],
@@ -357,7 +357,7 @@ describe('sequelizeFindByCursor', () => {
       ],
     });
 
-    assert.deepStrictEqual(results.cursorKeys, [
+    assert.deepStrictEqual(page.cursorKeys, [
       'firstName',
       'compositeUnique1',
       'compositeUnique2',
@@ -369,9 +369,9 @@ describe('sequelizeFindByCursor', () => {
 
   it('offset: skips the first N items when using first', async (t) => {
     // first:2 offset:2 → skip Alan, Bernard → Cedric Anderson(3), Cedric Brown(2)
-    const results = sequelizeFindByCursor({
+    const page = new SequelizePage({
       attributes: ['firstName', 'lastName', 'id'],
-      model: userModel,
+      model: UserModel,
       first: 2,
       offset: 2,
       order: [
@@ -380,16 +380,16 @@ describe('sequelizeFindByCursor', () => {
       ],
     });
 
-    t.assert.snapshot(await results.getNodes());
-    assert.strictEqual(await results.hasPreviousPage(), true);
-    assert.strictEqual(await results.hasNextPage(), true);
+    t.assert.snapshot(await page.getNodes());
+    assert.strictEqual(await page.hasPreviousPage(), true);
+    assert.strictEqual(await page.hasNextPage(), true);
   });
 
   it('offset: skips the last N items when using last', async (t) => {
     // last:2 offset:2 → skip Dimitri(1), Dimitri(6) from end → Cedric Anderson(3), Cedric Brown(2)
-    const results = sequelizeFindByCursor({
+    const page = new SequelizePage({
       attributes: ['firstName', 'lastName', 'id'],
-      model: userModel,
+      model: UserModel,
       last: 2,
       offset: 2,
       order: [
@@ -398,17 +398,17 @@ describe('sequelizeFindByCursor', () => {
       ],
     });
 
-    t.assert.snapshot(await results.getNodes());
-    assert.strictEqual(await results.hasPreviousPage(), true);
-    assert.strictEqual(await results.hasNextPage(), true);
+    t.assert.snapshot(await page.getNodes());
+    assert.strictEqual(await page.hasPreviousPage(), true);
+    assert.strictEqual(await page.hasNextPage(), true);
   });
 
   it('offset: can be combined with after cursor (first)', async (t) => {
     // after: Cedric Anderson(3) → set is [Cedric Brown(2), Dimitri(1), Dimitri(6)]
     // offset:1, first:2 → skip Cedric Brown(2) → Dimitri(1), Dimitri(6)
-    const results = sequelizeFindByCursor({
+    const page = new SequelizePage({
       attributes: ['firstName', 'lastName', 'id'],
-      model: userModel,
+      model: UserModel,
       first: 2,
       offset: 1,
       after: {
@@ -422,17 +422,17 @@ describe('sequelizeFindByCursor', () => {
       ],
     });
 
-    t.assert.snapshot(await results.getNodes());
-    assert.strictEqual(await results.hasPreviousPage(), true);
-    assert.strictEqual(await results.hasNextPage(), false);
+    t.assert.snapshot(await page.getNodes());
+    assert.strictEqual(await page.hasPreviousPage(), true);
+    assert.strictEqual(await page.hasNextPage(), false);
   });
 
   it('offset: can be combined with after cursor (last)', async (t) => {
     // after: Cedric Anderson(3) → set is [Cedric Brown(2), Dimitri(1), Dimitri(6)]
     // offset:1, last:2 → skip Dimitri(6) from end → Cedric Brown(2), Dimitri(1)
-    const results = sequelizeFindByCursor({
+    const page = new SequelizePage({
       attributes: ['firstName', 'lastName', 'id'],
-      model: userModel,
+      model: UserModel,
       last: 2,
       offset: 1,
       after: {
@@ -446,17 +446,17 @@ describe('sequelizeFindByCursor', () => {
       ],
     });
 
-    t.assert.snapshot(await results.getNodes());
-    assert.strictEqual(await results.hasPreviousPage(), false);
-    assert.strictEqual(await results.hasNextPage(), true);
+    t.assert.snapshot(await page.getNodes());
+    assert.strictEqual(await page.hasPreviousPage(), false);
+    assert.strictEqual(await page.hasNextPage(), true);
   });
 
   it('offset: can be combined with before cursor (last)', async (t) => {
     // before: Dimitri(6) → set is [Alan(5), Bernard(4), Cedric Anderson(3), Cedric Brown(2), Dimitri(1)]
     // offset:1, last:2 → skip Dimitri(1) from end → Cedric Anderson(3), Cedric Brown(2)
-    const results = sequelizeFindByCursor({
+    const page = new SequelizePage({
       attributes: ['firstName', 'lastName', 'id'],
-      model: userModel,
+      model: UserModel,
       last: 2,
       offset: 1,
       before: {
@@ -470,17 +470,17 @@ describe('sequelizeFindByCursor', () => {
       ],
     });
 
-    t.assert.snapshot(await results.getNodes());
-    assert.strictEqual(await results.hasPreviousPage(), true);
-    assert.strictEqual(await results.hasNextPage(), true);
+    t.assert.snapshot(await page.getNodes());
+    assert.strictEqual(await page.hasPreviousPage(), true);
+    assert.strictEqual(await page.hasNextPage(), true);
   });
 
   it('offset: can be combined with before cursor (first)', async (t) => {
     // before: Dimitri(6) → set is [Alan(5), Bernard(4), Cedric Anderson(3), Cedric Brown(2), Dimitri(1)]
     // offset:1, first:2 → skip Alan(5) → Bernard(4), Cedric Anderson(3)
-    const results = sequelizeFindByCursor({
+    const page = new SequelizePage({
       attributes: ['firstName', 'lastName', 'id'],
-      model: userModel,
+      model: UserModel,
       first: 2,
       offset: 1,
       before: {
@@ -494,16 +494,16 @@ describe('sequelizeFindByCursor', () => {
       ],
     });
 
-    t.assert.snapshot(await results.getNodes());
-    assert.strictEqual(await results.hasPreviousPage(), true);
-    assert.strictEqual(await results.hasNextPage(), true);
+    t.assert.snapshot(await page.getNodes());
+    assert.strictEqual(await page.hasPreviousPage(), true);
+    assert.strictEqual(await page.hasNextPage(), true);
   });
 
   it('offset: offset beyond available items returns empty result', async () => {
     // 6 total items, offset:10, first:2 → nothing to return
-    const results = sequelizeFindByCursor({
+    const page = new SequelizePage({
       attributes: ['firstName', 'lastName', 'id'],
-      model: userModel,
+      model: UserModel,
       first: 2,
       offset: 10,
       order: [
@@ -512,15 +512,15 @@ describe('sequelizeFindByCursor', () => {
       ],
     });
 
-    assert.strictEqual((await results.getNodes()).length, 0);
-    assert.strictEqual(await results.hasPreviousPage(), true);
-    assert.strictEqual(await results.hasNextPage(), false);
+    assert.strictEqual((await page.getNodes()).length, 0);
+    assert.strictEqual(await page.hasPreviousPage(), true);
+    assert.strictEqual(await page.hasNextPage(), false);
   });
 
   it('offset: offset=0 is equivalent to no offset (first)', async () => {
-    const withOffset = sequelizeFindByCursor({
+    const withOffset = new SequelizePage({
       attributes: ['firstName', 'lastName', 'id'],
-      model: userModel,
+      model: UserModel,
       first: 3,
       offset: 0,
       order: [
@@ -529,9 +529,9 @@ describe('sequelizeFindByCursor', () => {
       ],
     });
 
-    const withoutOffset = sequelizeFindByCursor({
+    const withoutOffset = new SequelizePage({
       attributes: ['firstName', 'lastName', 'id'],
-      model: userModel,
+      model: UserModel,
       first: 3,
       order: [
         ['firstName', 'ASC'],
@@ -556,9 +556,9 @@ describe('sequelizeFindByCursor', () => {
   it('offset: throws when offset is negative', () => {
     assert.throws(
       () =>
-        sequelizeFindByCursor({
+        new SequelizePage({
           attributes: ['firstName', 'lastName', 'id'],
-          model: userModel,
+          model: UserModel,
           first: 2,
           offset: -1,
           order: [['firstName', 'ASC']],
@@ -569,40 +569,40 @@ describe('sequelizeFindByCursor', () => {
 
   it('nodes/hasNextPage/hasPreviousPage: are lazily evaluated — do not query the DB until called', async () => {
     let findAllCallCount = 0;
-    const results = sequelizeFindByCursor({
-      model: userModel,
+    const page = new SequelizePage({
+      model: UserModel,
       first: 2,
       order: [['firstName', 'ASC']],
       findAll: async (query) => {
         findAllCallCount++;
 
-        return userModel.findAll(query);
+        return UserModel.findAll(query);
       },
     });
 
     assert.strictEqual(findAllCallCount, 0);
 
-    await results.getNodes();
+    await page.getNodes();
     assert.strictEqual(findAllCallCount, 1);
   });
 
   it('nodes/hasNextPage/hasPreviousPage: share a single DB query when called in parallel', async () => {
     let findAllCallCount = 0;
-    const results = sequelizeFindByCursor({
-      model: userModel,
+    const page = new SequelizePage({
+      model: UserModel,
       first: 2,
       order: [['firstName', 'ASC']],
       findAll: async (query) => {
         findAllCallCount++;
 
-        return userModel.findAll(query);
+        return UserModel.findAll(query);
       },
     });
 
     await Promise.all([
-      results.getNodes(),
-      results.hasNextPage(),
-      results.hasPreviousPage(),
+      page.getNodes(),
+      page.hasNextPage(),
+      page.hasPreviousPage(),
     ]);
     assert.strictEqual(findAllCallCount, 1);
   });
@@ -613,21 +613,21 @@ describe('sequelizeFindByCursor', () => {
     //   hasPreviousPage() → #getPageDeduped (shared)
     //   hasNextPage()     → isLast=true, offset=0, no `before` cursor → returns false immediately
     let findAllCallCount = 0;
-    const results = sequelizeFindByCursor({
-      model: userModel,
+    const page = new SequelizePage({
+      model: UserModel,
       last: 2,
       order: [['firstName', 'ASC']],
       findAll: async (query) => {
         findAllCallCount++;
 
-        return userModel.findAll(query);
+        return UserModel.findAll(query);
       },
     });
 
     await Promise.all([
-      results.getNodes(),
-      results.hasNextPage(),
-      results.hasPreviousPage(),
+      page.getNodes(),
+      page.hasNextPage(),
+      page.hasPreviousPage(),
     ]);
     assert.strictEqual(findAllCallCount, 1);
   });
@@ -638,8 +638,8 @@ describe('sequelizeFindByCursor', () => {
     //   hasNextPage()     → #getPageDeduped (shared)
     //   hasPreviousPage() → after is set → separate getPage call with reversed cursor
     let findAllCallCount = 0;
-    const results = sequelizeFindByCursor({
-      model: userModel,
+    const page = new SequelizePage({
+      model: UserModel,
       first: 2,
       after: { id: 3, firstName: 'Cedric', lastName: 'Anderson' },
       order: [
@@ -649,14 +649,14 @@ describe('sequelizeFindByCursor', () => {
       findAll: async (query) => {
         findAllCallCount++;
 
-        return userModel.findAll(query);
+        return UserModel.findAll(query);
       },
     });
 
     await Promise.all([
-      results.getNodes(),
-      results.hasNextPage(),
-      results.hasPreviousPage(),
+      page.getNodes(),
+      page.hasNextPage(),
+      page.hasPreviousPage(),
     ]);
     assert.strictEqual(findAllCallCount, 2);
   });
@@ -667,8 +667,8 @@ describe('sequelizeFindByCursor', () => {
     //   hasPreviousPage() → #getPageDeduped (shared)
     //   hasNextPage()     → before is set → separate getPage call with reversed cursor
     let findAllCallCount = 0;
-    const results = sequelizeFindByCursor({
-      model: userModel,
+    const page = new SequelizePage({
+      model: UserModel,
       last: 2,
       before: { id: 1, firstName: 'Dimitri', lastName: 'LastName' },
       order: [
@@ -678,14 +678,14 @@ describe('sequelizeFindByCursor', () => {
       findAll: async (query) => {
         findAllCallCount++;
 
-        return userModel.findAll(query);
+        return UserModel.findAll(query);
       },
     });
 
     await Promise.all([
-      results.getNodes(),
-      results.hasNextPage(),
-      results.hasPreviousPage(),
+      page.getNodes(),
+      page.hasNextPage(),
+      page.hasPreviousPage(),
     ]);
     assert.strictEqual(findAllCallCount, 2);
   });
@@ -694,19 +694,19 @@ describe('sequelizeFindByCursor', () => {
     // Deduplication only coalesces calls made before the first query settles.
     // Once the promise resolves, subsequent calls start a fresh query.
     let findAllCallCount = 0;
-    const results = sequelizeFindByCursor({
-      model: userModel,
+    const page = new SequelizePage({
+      model: UserModel,
       first: 2,
       order: [['firstName', 'ASC']],
       findAll: async (query) => {
         findAllCallCount++;
 
-        return userModel.findAll(query);
+        return UserModel.findAll(query);
       },
     });
 
-    await results.getNodes(); // query 1
-    await results.hasNextPage(); // query 2 (dedup promise already settled and cleared)
+    await page.getNodes(); // query 1
+    await page.hasNextPage(); // query 2 (dedup promise already settled and cleared)
     assert.strictEqual(findAllCallCount, 2);
   });
 
@@ -716,31 +716,31 @@ describe('sequelizeFindByCursor', () => {
     // Total = 6
 
     it('returns the total count of all records when no filter is applied', async () => {
-      const results = sequelizeFindByCursor({
-        model: userModel,
+      const page = new SequelizePage({
+        model: UserModel,
         first: 2, // only fetches 2 nodes, but total should still be 6
         order: [['firstName', 'ASC']],
       });
 
-      assert.strictEqual(await results.getTotalCount(), 6);
+      assert.strictEqual(await page.getTotalCount(), 6);
     });
 
     it('respects the where filter but ignores cursor constraints', async () => {
       // birthDate >= 1990-01-01 matches: Alan(2000), Dimitri(1990), Dimitri(2010) → 3 records
-      const results = sequelizeFindByCursor({
-        model: userModel,
+      const page = new SequelizePage({
+        model: UserModel,
         first: 1, // only fetches 1 node
         where: { birthDate: { [Op.gte]: '1990-01-01' } },
         order: [['firstName', 'ASC']],
       });
 
-      assert.strictEqual(await results.getTotalCount(), 3);
+      assert.strictEqual(await page.getTotalCount(), 3);
     });
 
     it('ignores after cursor (counts entire matching set, not the cursor-filtered subset)', async () => {
       // after: Cedric Anderson(3) normally filters to 3 records, but totalCount should still be 6
-      const results = sequelizeFindByCursor({
-        model: userModel,
+      const page = new SequelizePage({
+        model: UserModel,
         first: 10,
         after: { id: 3, firstName: 'Cedric', lastName: 'Anderson' },
         order: [
@@ -749,14 +749,14 @@ describe('sequelizeFindByCursor', () => {
         ],
       });
 
-      assert.strictEqual((await results.getNodes()).length, 3); // only 3 after the cursor
-      assert.strictEqual(await results.getTotalCount(), 6); // but total is still 6
+      assert.strictEqual((await page.getNodes()).length, 3); // only 3 after the cursor
+      assert.strictEqual(await page.getTotalCount(), 6); // but total is still 6
     });
 
     it('ignores before cursor (counts entire matching set, not the cursor-filtered subset)', async () => {
       // before: Cedric Anderson(3) normally filters to 2 records, but totalCount should still be 6
-      const results = sequelizeFindByCursor({
-        model: userModel,
+      const page = new SequelizePage({
+        model: UserModel,
         first: 10,
         before: { id: 3, firstName: 'Cedric', lastName: 'Anderson' },
         order: [
@@ -765,15 +765,15 @@ describe('sequelizeFindByCursor', () => {
         ],
       });
 
-      assert.strictEqual((await results.getNodes()).length, 2); // only 2 before the cursor
-      assert.strictEqual(await results.getTotalCount(), 6); // but total is still 6
+      assert.strictEqual((await page.getNodes()).length, 2); // only 2 before the cursor
+      assert.strictEqual(await page.getTotalCount(), 6); // but total is still 6
     });
 
     it('is lazily evaluated — does not query the DB until called', async (t) => {
-      const countSpy = t.mock.method(userModel, 'count');
+      const countSpy = t.mock.method(UserModel, 'count');
 
-      sequelizeFindByCursor({
-        model: userModel,
+      new SequelizePage({
+        model: UserModel,
         first: 2,
         order: [['firstName', 'ASC']],
       });
