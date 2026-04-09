@@ -2,7 +2,7 @@
 
 [GraphQL-ready cursor pagination](https://graphql.org/learn/pagination/) for Sequelize.
 
-This library provides tools to build paginated queries with __cursor and/or offset pagination__, 
+This library provides tools to build paginated queries with **cursor and/or offset pagination**,
 and to easily retrieve the paginated results along with pagination metadata.
 
 It includes efficient built-in support for `hasNextPage`, `hasPreviousPage`, and `getTotalCount`.
@@ -17,7 +17,7 @@ TypeScript typings are built-in.
 
 ## Usage
 
-`SequelizePage` is the main class of this library. It takes a set of options and returns 
+`SequelizePage` is the main class of this library. It takes a set of options and returns
 an object with methods to retrieve the paginated results and pagination metadata.
 
 Here is a basic example that retrieves the first 10 results:
@@ -29,10 +29,10 @@ const page = new SequelizePage({
   model: UserModel,
   // you can also use 'last'
   first: 10,
-  
+
   // The sort order is mandatory and should include a unique index
   // If no unique index is included, the primary key will be added to the sort order by default.
-  // The unique index is necessary to break ties and ensure a deterministic sort order, 
+  // The unique index is necessary to break ties and ensure a deterministic sort order,
   // which is required for any pagination to work correctly.
   order: [
     ['firstName', 'ASC'],
@@ -57,8 +57,8 @@ await page.getTotalCount();
 
 This library supports both cursor pagination (using `after`/`before`) and offset pagination (using `offset`), which can be optionally combined.
 
-|                               | Cursor pagination                                                                         | Offset pagination                                                                    |
-|-------------------------------|-------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+|                               | Cursor pagination                                                                          | Offset pagination                                                                     |
+| ----------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
 | **Stable under mutations**    | ✅ Inserts/deletes between pages don't cause repeated or skipped items when changing pages | ❌ A row inserted or deleted before the current position shifts every subsequent page |
 | **Arbitrary page jumps**      | ❌ Must walk page-by-page from a known cursor                                              | ✅ Can jump directly to any page                                                      |
 | **Large dataset performance** | ✅ Efficient (if properly indexed) — filters by index using `WHERE`                        | ❌ Degrades with large offsets — the database must scan and discard skipped rows      |
@@ -84,7 +84,7 @@ This library expects the cursor to be an object that contain the fields used to 
 This is the list of fields specified in the `order` option, plus a unique field (either a unique index or the primary key) to ensure a deterministic sort order.
 If no unique index is included in the `order` option, the primary key will be added to the sort order by default.
 
-In the following example, the sort order uses `firstName` and the table has `id` as the sole primary key. 
+In the following example, the sort order uses `firstName` and the table has `id` as the sole primary key.
 Therefore, the cursor will be an object with the shape `{ firstName: string, id: number }`.
 
 ### Building the cursor
@@ -133,9 +133,7 @@ const page = new SequelizePage({
     id: 6,
     firstName: 'Bernard',
   },
-  order: [
-    ['firstName', 'ASC'],
-  ],
+  order: [['firstName', 'ASC']],
 });
 ```
 
@@ -153,9 +151,7 @@ const page = new SequelizePage({
     id: 6,
     firstName: 'Bernard',
   },
-  order: [
-    ['firstName', 'ASC'],
-  ],
+  order: [['firstName', 'ASC']],
 });
 ```
 
@@ -233,7 +229,7 @@ They are async, but are designed to be efficient and will not run additional que
 ## Total Count
 
 The `getTotalCount()` method returns the total number of records that match the base `where` filter,
-**ignoring** any cursor (`after`/`before`) and pagination (`first`/`last`/`offset`). 
+**ignoring** any cursor (`after`/`before`) and pagination (`first`/`last`/`offset`).
 This is useful for building "Page 1 of N" style UIs.
 
 ```typescript

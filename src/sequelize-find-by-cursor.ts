@@ -377,7 +377,8 @@ async function getPage<Entity extends Model>(
   queryMetadata: QueryMetadata<Entity>,
   options: Transactionable | undefined,
 ): Promise<{ hasMoreNodes: boolean; nodes: Entity[] }> {
-  const { sortOrder, after, before, isLast, findAll, sequelizeOptions } = queryMetadata;
+  const { sortOrder, after, before, isLast, findAll, sequelizeOptions } =
+    queryMetadata;
 
   const queryOrder = orderTupleToSequelizeOrder(
     isLast ? reverseOrder(sortOrder) : sortOrder,
